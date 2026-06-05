@@ -74,7 +74,7 @@ export type PhoneCandidate = {
 export type CallLog = {
   id: string;
   clinic_id: string;
-  user_id: string;
+  user_id: string | null; // 合言葉方式では記名なし（null）
   outcome: ClinicStatus;
   memo: string | null;
   created_at: string;
