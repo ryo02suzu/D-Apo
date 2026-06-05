@@ -50,7 +50,7 @@ export default async function AppLayout({
 
       <nav className="fixed inset-x-0 bottom-0 z-10 mx-auto flex max-w-2xl items-center justify-around border-t border-slate-200 bg-white/95 px-2 py-2 backdrop-blur">
         <NavItem href="/clinics" icon="📋" label="医院一覧" />
-        <NavItem href="/clinics?open=1" icon="🟢" label="営業中" />
+        <NavItem href="/clinics/review" icon="☎️" label="番号確認" />
       </nav>
     </div>
   );

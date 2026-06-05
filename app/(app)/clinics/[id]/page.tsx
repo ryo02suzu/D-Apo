@@ -7,6 +7,7 @@ import { CallButton } from "@/components/call-button";
 import { CallLogForm } from "@/components/call-log-form";
 import { CallLogTimeline } from "@/components/call-log-timeline";
 import { OpenStatusBadge } from "@/components/open-status-badge";
+import { PhoneEditor } from "@/components/phone-editor";
 import { StatusSelect } from "@/components/status-select";
 import { createClient } from "@/lib/supabase/server";
 import type { CallLogWithUser, Clinic } from "@/lib/types";
@@ -55,14 +56,6 @@ export default async function ClinicDetailPage({
               <OpenStatusBadge hours={c.hours} />
             </div>
             <h1 className="text-xl font-bold text-slate-900">{c.name}</h1>
-            {c.phone && (
-              <a
-                href={`tel:${c.phone.replace(/[^\d+]/g, "")}`}
-                className="mt-1 inline-block text-emerald-700 underline"
-              >
-                {c.phone}
-              </a>
-            )}
             {c.address && (
               <p className="mt-1 text-sm text-slate-500">
                 {c.prefecture}
@@ -75,6 +68,16 @@ export default async function ClinicDetailPage({
             )}
           </div>
         </div>
+
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <PhoneEditor
+            clinicId={c.id}
+            phone={c.phone}
+            phoneSource={c.phone_source}
+            phoneVerified={c.phone_verified}
+          />
+        </div>
+
         <div className="mt-4">
           <CallButton phone={c.phone} />
         </div>
