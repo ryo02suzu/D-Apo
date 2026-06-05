@@ -4,6 +4,7 @@
 // Dentia.html の .p3-top / .badges / .tabs / .timeline / .info-row に対応。
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Avatar } from "@/components/avatar";
 import { CallLogForm } from "@/components/call-log-form";
 import { CallLogTimeline } from "@/components/call-log-timeline";
 import { ClinicDetailTabs } from "@/components/clinic-detail-tabs";
@@ -12,35 +13,28 @@ import { OpenStatusBadge } from "@/components/open-status-badge";
 import { PhoneEditor } from "@/components/phone-editor";
 import { StatusBadge } from "@/components/status-badge";
 import { StatusSelect } from "@/components/status-select";
+import { getCurrentMember } from "@/lib/member";
+import { selectClinic, selectClinicLogs } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import type { CallLogWithUser, Clinic } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClinicDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const supabase = await createClient();
+  const member = await getCurrentMember();
 
-  const { data: clinic } = await supabase
-    .from("clinics")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const c = await selectClinic(supabase, id);
+  if (!c) notFound();
 
-  if (!clinic) notFound();
-  const c = clinic as Clinic;
-
-  const { data: logsData } = await supabase
-    .from("call_logs")
-    .select("*, profiles(display_name)")
-    .eq("clinic_id", id)
-    .order("created_at", { ascending: false });
-
-  const logs = (logsData ?? []) as CallLogWithUser[];
+  const logs = await selectClinicLogs(supabase, id);
   const tel = c.phone ? c.phone.replace(/[^\d+]/g, "") : "";
 
   return (
@@ -69,12 +63,26 @@ export default async function ClinicDetailPage({
         </a>
       )}
 
+      {c.members && (
+        <div className="owner">
+          <span className="owner-l">
+            <Avatar
+              name={c.members.name}
+              color={c.members.color}
+              size={22}
+            />
+            担当：{c.members.name}
+          </span>
+        </div>
+      )}
+
       <div className="badges">
         <StatusBadge status={c.status} />
         <OpenStatusBadge hours={c.hours} />
       </div>
 
       <ClinicDetailTabs
+        defaultTab={tab === "result" ? "result" : "history"}
         history={<CallLogTimeline logs={logs} />}
         info={
           <div className="info">
@@ -121,7 +129,11 @@ export default async function ClinicDetailPage({
               className="divider"
               style={{ margin: "22px -18px 0" }}
             />
-            <CallLogForm clinicId={c.id} defaultStatus={c.status} />
+            <CallLogForm
+              clinicId={c.id}
+              defaultStatus={c.status}
+              memberId={member?.id ?? null}
+            />
           </div>
         }
       />

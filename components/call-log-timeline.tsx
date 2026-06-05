@@ -34,7 +34,7 @@ export function CallLogTimeline({ logs }: { logs: CallLogWithUser[] }) {
           <div className="body">
             <div className="meta">
               <span className="dt">{formatAt(log.created_at)}</span>
-              <span className="who">{log.profiles?.display_name ?? "不明"}</span>
+              <span className="who">{log.members?.name ?? "不明"}</span>
               <StatusBadge status={log.outcome} />
             </div>
             <div className="note">{log.memo || "—"}</div>

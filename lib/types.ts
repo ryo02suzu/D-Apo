@@ -30,6 +30,17 @@ export type Profile = {
   created_at: string;
 };
 
+/** members テーブル（合言葉ログイン後にアプリ内で選ぶ担当者） */
+export type Member = {
+  id: string;
+  name: string;
+  color: string;
+  created_at: string;
+};
+
+/** join 用の最小メンバー情報（name/color のみ） */
+export type MemberRef = Pick<Member, "name" | "color">;
+
 /** clinics テーブル（架電対象の歯科医院マスタ） */
 export type Clinic = {
   id: string;
@@ -53,7 +64,12 @@ export type Clinic = {
   phone_verified: boolean;
   created_at: string;
   updated_at: string;
+  /** assigned_to を members に join したときのみ存在（担当者の表示用） */
+  members?: MemberRef | null;
 };
+
+/** 担当者（members）を join した医院 */
+export type ClinicWithMember = Clinic & { members: MemberRef | null };
 
 /** 電話番号補完の確認キュー（Places候補） */
 export type PhoneCandidate = {
@@ -82,5 +98,12 @@ export type CallLog = {
 
 /** タイムライン表示用に発信者名を結合した架電履歴 */
 export type CallLogWithUser = CallLog & {
-  profiles: Pick<Profile, "display_name"> | null;
+  /** user_id を members に join したときのみ存在（発信者の表示用） */
+  members?: MemberRef | null;
+};
+
+/** 履歴フィード用：医院名も結合した架電履歴 */
+export type CallLogFeedItem = CallLog & {
+  members: MemberRef | null;
+  clinics: Pick<Clinic, "id" | "name"> | null;
 };

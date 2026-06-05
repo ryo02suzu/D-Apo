@@ -2,6 +2,7 @@
 // 設計書 §3: 1医院のカード（Dentia.html の .listcard）。
 // 名前・ステータスバッジ・住所・電話・次回予定・営業時間バッジ・発信FAB。
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { CallButton } from "@/components/call-button";
 import { Icon } from "@/components/icon";
 import { OpenStatusBadge } from "@/components/open-status-badge";
@@ -71,6 +72,16 @@ export function ClinicCard({ clinic }: { clinic: Clinic }) {
             <span>
               <Icon name="clock" size={14} style={{ color: "var(--muted2)" }} />
               {clinic.business_hours}
+            </span>
+          )}
+          {clinic.members && (
+            <span>
+              <Avatar
+                name={clinic.members.name}
+                color={clinic.members.color}
+                size={16}
+              />
+              担当 {clinic.members.name}
             </span>
           )}
           {clinic.latest_memo && (

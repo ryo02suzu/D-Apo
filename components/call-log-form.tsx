@@ -15,9 +15,11 @@ import type { ClinicStatus } from "@/lib/types";
 export function CallLogForm({
   clinicId,
   defaultStatus,
+  memberId,
 }: {
   clinicId: string;
   defaultStatus: ClinicStatus;
+  memberId: string | null;
 }) {
   const router = useRouter();
   const [outcome, setOutcome] = useState<ClinicStatus>(defaultStatus);
@@ -32,24 +34,26 @@ export function CallLogForm({
     startTransition(async () => {
       const supabase = createClient();
 
-      // 1) 架電履歴を追加（合言葉方式のため記名なし）
+      // 1) 架電履歴を追加（担当者 member を記名）
       const { error: logErr } = await supabase.from("call_logs").insert({
         clinic_id: clinicId,
         outcome,
         memo: memo || null,
+        user_id: memberId,
       });
       if (logErr) {
         setError("登録に失敗しました");
         return;
       }
 
-      // 2) 一覧表示用の冗長カラムを同期
+      // 2) 一覧表示用の冗長カラムを同期（担当者もこの医院に割り当てる）
       const { error: clinicErr } = await supabase
         .from("clinics")
         .update({
           status: outcome,
           latest_memo: memo || null,
           next_action_at: nextAt ? new Date(nextAt).toISOString() : null,
+          ...(memberId ? { assigned_to: memberId } : {}),
         })
         .eq("id", clinicId);
       if (clinicErr) {

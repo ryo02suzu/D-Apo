@@ -942,3 +942,482 @@ textarea {
   border-radius: 50%;
   flex: none;
 }
+
+/* ───────── avatar（色付きイニシャル） ───────── */
+.av {
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  flex: none;
+  line-height: 1;
+}
+
+/* ───────── ヘッダのアバター/メニュー ───────── */
+.apphead .brand .title {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.ah-menu-wrap {
+  position: relative;
+  display: flex;
+}
+.ah-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 248px;
+  background: var(--page);
+  border: 1px solid var(--line2);
+  border-radius: 16px;
+  box-shadow: 0 14px 36px rgba(20, 30, 40, 0.16);
+  overflow: hidden;
+  padding: 6px;
+}
+.ah-menu-id {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 10px 12px;
+}
+.ah-menu-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.ah-menu-role {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.ah-menu .menuitem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  border-radius: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.ah-menu .menuitem:active {
+  background: var(--card);
+}
+.ah-menu .menuitem .mi-label {
+  flex: 1;
+  text-align: left;
+}
+.ah-menu .menuitem.danger {
+  color: var(--red-fg);
+}
+.red-ic {
+  color: var(--red);
+}
+
+/* ───────── presence ピル ───────── */
+.presence-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 12px 0 2px;
+}
+.presence-row .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #eef6f6;
+  border: 1px solid #d7e9e9;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink2);
+  white-space: nowrap;
+}
+.presence-row .pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  flex: none;
+  box-shadow: 0 0 0 0 rgba(34, 177, 76, 0.5);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 177, 76, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(34, 177, 76, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 177, 76, 0);
+  }
+}
+
+.count-pill {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  background: var(--cyan-bg);
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+
+/* ───────── ホーム：次に電話する医院カード ───────── */
+.clinic .row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 10px;
+}
+.clinic .name {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: 0.3px;
+}
+.clinic .addr {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 7px;
+  font-weight: 500;
+}
+.clinic .tel {
+  margin-top: 9px;
+}
+.owner-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink2);
+  font-weight: 600;
+}
+.memo-lbl {
+  font-size: 12px;
+  color: var(--muted2);
+  margin-top: 15px;
+  font-weight: 600;
+}
+.memo-tx {
+  font-size: 14px;
+  color: var(--ink2);
+  margin-top: 5px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* 詳細：担当者行 */
+.owner {
+  display: flex;
+  align-items: center;
+  margin-top: 13px;
+}
+.owner .owner-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  color: var(--ink2);
+  font-weight: 600;
+}
+
+/* ───────── ホーム：今日の予定 ───────── */
+.sched .item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  font-size: 14px;
+}
+.sched .item + .item {
+  border-top: 1px solid var(--line);
+}
+.sched .time {
+  font-weight: 800;
+  color: var(--ink);
+  width: 48px;
+  flex: none;
+}
+.sched .cl {
+  flex: 1;
+  color: var(--ink2);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ───────── 下タブ：中央FAB ───────── */
+.tab.fab {
+  transform: translateY(-16px);
+  gap: 7px;
+  color: var(--ink2);
+}
+.fab-c {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--teal) 32%, transparent);
+}
+.tab.fab:active .fab-c {
+  background: var(--teal-d);
+}
+
+/* ───────── 履歴フィード ───────── */
+.feed {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0 22px;
+}
+.feed-item {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.fi-body {
+  flex: 1;
+  min-width: 0;
+}
+.fi-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.fi-top b {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.fi-time {
+  font-size: 12px;
+  color: var(--muted2);
+  font-weight: 500;
+  flex: none;
+}
+.fi-cl {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--ink2);
+  font-weight: 600;
+  margin-top: 6px;
+}
+.fi-note {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-top: 6px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* ───────── ダッシュボード ───────── */
+.dash-card {
+  background: var(--card);
+  border: 1px solid #e8ebed;
+  border-radius: 18px;
+  padding: 18px;
+  margin-top: 16px;
+}
+.dash-head h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.dash3,
+.dash2 {
+  display: flex;
+  margin-top: 14px;
+}
+.dash3 .c,
+.dash2 .c {
+  flex: 1;
+  text-align: center;
+  padding: 0 4px;
+}
+.dash3 .c + .c,
+.dash2 .c + .c {
+  border-left: 1px solid var(--line2);
+}
+.dash3 .k,
+.dash2 .k {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.dash3 .v,
+.dash2 .v {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-top: 5px;
+  white-space: nowrap;
+}
+.dash3 .v small,
+.dash2 .v small {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 1px;
+}
+.dash2 {
+  margin-top: 16px;
+}
+
+.cc-block {
+  margin-top: 24px;
+}
+.cc-block h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.sumrow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 2px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--line);
+}
+.sumrow .sdot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+.sumrow .slabel {
+  color: var(--ink2);
+  font-weight: 600;
+}
+.sumrow .scount {
+  margin-left: auto;
+  font-weight: 800;
+  color: var(--ink);
+}
+.sumrow .scount small {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-left: 1px;
+}
+.hbars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.hbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.hbar .hb-label {
+  width: 84px;
+  flex: none;
+  color: var(--ink2);
+  font-weight: 600;
+}
+.hbar .hb-track {
+  flex: 1;
+  height: 10px;
+  border-radius: 6px;
+  background: #e8ecee;
+  overflow: hidden;
+}
+.hbar .hb-track i {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+}
+.hbar .hb-num {
+  width: 26px;
+  text-align: right;
+  flex: none;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* ───────── メンバーピッカー（担当者選択ゲート） ───────── */
+.picker-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  min-height: 100dvh;
+}
+.picker-card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+}
+.picker-title {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--ink);
+  text-align: center;
+  margin-top: 6px;
+}
+.picker-sub {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 500;
+  line-height: 1.6;
+  margin-top: 8px;
+}
+.picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+}
+.picker-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--page);
+  border: 1.5px solid var(--line2);
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+}
+.picker-item:active {
+  background: var(--card);
+}
+.picker-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.picker-add {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+}
