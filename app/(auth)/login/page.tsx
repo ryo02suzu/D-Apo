@@ -28,25 +28,15 @@ export default function LoginPage() {
         >
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-500">
-              メールアドレス
-            </label>
-            <input
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">
-              パスワード
+              合言葉
             </label>
             <input
               name="password"
               type="password"
               required
+              autoFocus
               autoComplete="current-password"
+              placeholder="チーム共通の合言葉"
               className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
             />
           </div>
@@ -62,7 +52,7 @@ export default function LoginPage() {
           </button>
 
           <p className="pt-1 text-center text-xs text-slate-400">
-            アカウントは管理者がダッシュボードから招待します
+            合言葉はチーム管理者にお問い合わせください
           </p>
         </form>
       </div>

@@ -28,18 +28,10 @@ export function CallLogForm({
     setError(null);
     startTransition(async () => {
       const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setError("ログインが必要です");
-        return;
-      }
 
-      // 1) 架電履歴を追加
+      // 1) 架電履歴を追加（合言葉方式のため記名なし）
       const { error: logErr } = await supabase.from("call_logs").insert({
         clinic_id: clinicId,
-        user_id: user.id,
         outcome,
         memo: memo || null,
       });
@@ -55,7 +47,6 @@ export function CallLogForm({
           status: outcome,
           latest_memo: memo || null,
           next_action_at: nextAt ? new Date(nextAt).toISOString() : null,
-          assigned_to: user.id,
         })
         .eq("id", clinicId);
       if (clinicErr) {

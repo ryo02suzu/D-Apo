@@ -1,30 +1,38 @@
 // app/(auth)/login/actions.ts
-// 設計書 §3: /login … Supabase Auth でログイン。公開サインアップは無効化し、
-// メンバーはダッシュボードから招待する想定（ここでは sign in のみ）。
+// 合言葉（共有パスワード）でログイン。Supabase Auth は使わず、
+// 署名付き Cookie でログイン状態を保持する。合言葉は環境変数 APP_PASSWORD。
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import {
+  checkPassword,
+  createToken,
+  COOKIE_NAME,
+  COOKIE_MAX_AGE,
+} from "@/lib/auth";
 
 export async function login(_prev: string | null, formData: FormData) {
-  const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    return "メールアドレスまたはパスワードが正しくありません";
+  if (!checkPassword(password)) {
+    return "合言葉が違います";
   }
 
-  revalidatePath("/", "layout");
+  const store = await cookies();
+  store.set(COOKIE_NAME, await createToken(), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: COOKIE_MAX_AGE,
+  });
+
   redirect("/clinics");
 }
 
 export async function logout() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  revalidatePath("/", "layout");
+  const store = await cookies();
+  store.delete(COOKIE_NAME);
   redirect("/login");
 }

@@ -1,32 +1,14 @@
 // app/(app)/layout.tsx
 // 認証済みエリアの共通シェル。ヘッダ＋下タブナビ。
-// 設計書 Phase 1: メンバーは初回ログイン時に profiles を upsert する。
+// 合言葉方式：ログインの可否は proxy.ts が Cookie で判定済み。
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/(auth)/login/actions";
 
-export default async function AppLayout({
+export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  // 初回ログイン時に profiles を upsert（表示名は招待時のメタdata → なければメール）
-  const displayName =
-    (user.user_metadata?.display_name as string | undefined) ??
-    user.email?.split("@")[0] ??
-    "メンバー";
-  await supabase
-    .from("profiles")
-    .upsert({ id: user.id, display_name: displayName }, { onConflict: "id" });
-
   return (
     <div className="mx-auto flex min-h-dvh max-w-2xl flex-col">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur">
@@ -41,7 +23,7 @@ export default async function AppLayout({
             type="submit"
             className="text-xs font-medium text-slate-400 hover:text-slate-600"
           >
-            {displayName} / ログアウト
+            ログアウト
           </button>
         </form>
       </header>
