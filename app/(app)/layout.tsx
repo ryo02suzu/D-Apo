@@ -1,40 +1,68 @@
 // app/(app)/layout.tsx
-// 認証済みエリアの共通シェル。ヘッダ＋下タブナビ（Dentia.html 準拠）。
-// 合言葉方式：ログインの可否は proxy.ts が Cookie で判定済み。
-import Link from "next/link";
+// 認証済みエリアの共通シェル。ヘッダ＋下タブ（5タブ・中央FAB）。
+// 合言葉ログインの可否は proxy.ts が Cookie で判定済み。
+// ログイン後、まだ「自分が誰か」を選んでいなければ MemberPicker を出す。
 import { logout } from "@/app/(auth)/login/actions";
-import { Icon } from "@/components/icon";
-import { TabBarItem } from "@/components/tab-bar-item";
+import { AppHeader } from "@/components/app-header";
+import { MemberPicker } from "@/components/member-picker";
+import { MemberProvider } from "@/components/member-context";
+import { TabBar } from "@/components/tab-bar";
+import {
+  clearMember,
+  createAndSetMember,
+  getCurrentMember,
+  listMembers,
+  setMember,
+} from "@/lib/member";
+import { nextToCall } from "@/lib/next-clinic";
+import { createClient } from "@/lib/supabase/server";
+import type { Clinic } from "@/lib/types";
 
-export default function AppLayout({
+export const dynamic = "force-dynamic";
+
+export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const member = await getCurrentMember();
+
+  // 担当者未選択 → ピッカーゲート（children は出さない）
+  if (!member) {
+    const members = await listMembers();
+    return (
+      <div className="app-shell">
+        <MemberPicker
+          members={members}
+          onSelect={setMember}
+          onCreate={createAndSetMember}
+        />
+      </div>
+    );
+  }
+
+  // 中央FABの遷移先（次に電話する医院）を算出
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("clinics")
+    .select("id, status, updated_at")
+    .order("updated_at", { ascending: true });
+  const next = nextToCall((data ?? []) as Pick<Clinic, "id" | "status">[]);
+  const nextHref = next ? `/clinics/${next.id}` : "/clinics/list";
+
   return (
-    <div className="app-shell">
-      <header className="apphead">
-        <Link href="/clinics" className="brand">
-          <span className="mark">
-            <Icon name="tooth" size={18} fill />
-          </span>
-          <span className="title">歯科医院 架電CRM</span>
-        </Link>
-        <form action={logout}>
-          <button type="submit" className="ah-btn ttl-link">
-            ログアウト
-          </button>
-        </form>
-      </header>
+    <MemberProvider
+      member={{ id: member.id, name: member.name, color: member.color }}
+    >
+      <div className="app-shell">
+        <AppHeader onLogout={logout} onChangeMember={clearMember} />
 
-      <main className="screen" style={{ paddingBottom: "84px" }}>
-        {children}
-      </main>
+        <main className="screen" style={{ paddingBottom: "92px" }}>
+          {children}
+        </main>
 
-      <nav className="tabbar">
-        <TabBarItem href="/clinics" icon="list" label="医院一覧" />
-        <TabBarItem href="/clinics/review" icon="phone" label="番号確認" />
-      </nav>
-    </div>
+        <TabBar nextHref={nextHref} />
+      </div>
+    </MemberProvider>
   );
 }

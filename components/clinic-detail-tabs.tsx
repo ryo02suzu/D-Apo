@@ -12,12 +12,14 @@ export function ClinicDetailTabs({
   history,
   info,
   result,
+  defaultTab = "history",
 }: {
   history: React.ReactNode;
   info: React.ReactNode;
   result: React.ReactNode;
+  defaultTab?: TabKey;
 }) {
-  const [tab, setTab] = useState<TabKey>("history");
+  const [tab, setTab] = useState<TabKey>(defaultTab);
 
   return (
     <>

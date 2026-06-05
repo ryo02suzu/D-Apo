@@ -1,34 +1,67 @@
 // app/(app)/clinics/page.tsx
-// 設計書 §3 Phase 2/4: Server Component で clinics を select し、
-// 初期データを ClinicListRealtime（Client）へ渡す（SSR + Realtime購読）。
-import { ClinicListRealtime } from "@/components/clinic-list-realtime";
+// ホーム（HomeScreen / コールキュー）。
+// presence ピル + 今日の進捗(stat3+bar) + 次に電話する医院 + 今日の予定。
+import Link from "next/link";
+import { Avatar } from "@/components/avatar";
+import { Icon } from "@/components/icon";
+import { PresencePills } from "@/components/presence-pills";
+import { StatusBadge } from "@/components/status-badge";
+import { nextToCall } from "@/lib/next-clinic";
+import { selectClinics } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
-import type { Clinic } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClinicsPage() {
+function formatSchedule(iso: string): string {
+  return new Intl.DateTimeFormat("ja-JP", {
+    timeZone: "Asia/Tokyo",
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(iso));
+}
+
+export default async function HomeScreen() {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("clinics")
-    .select("*")
-    .order("updated_at", { ascending: false });
+  const clinics = await selectClinics(supabase, {
+    order: { column: "updated_at", ascending: true },
+  });
 
-  const clinics = (data ?? []) as Clinic[];
-
-  // 進捗サマリ（今日に限らず全体の集計。MVPではシンプルに）
+  // 進捗集計
   const total = clinics.length;
-  const heard = clinics.filter((c) => c.status === "heard").length;
-  const appointment = clinics.filter((c) => c.status === "appointment").length;
   const called = clinics.filter((c) => c.status !== "not_called").length;
+  const heard = clinics.filter(
+    (c) => c.status === "heard" || c.status === "appointment",
+  ).length;
+  const appo = clinics.filter((c) => c.status === "appointment").length;
   const heardRate = called ? Math.round((heard / called) * 1000) / 10 : 0;
 
+  // 次に電話する医院
+  const next = nextToCall(clinics);
+  const nextTel = next?.phone ? next.phone.replace(/[^\d+]/g, "") : "";
+
+  // 今日の予定：next_action_at がある医院を近い順に
+  const schedule = clinics
+    .filter((c) => c.next_action_at)
+    .sort(
+      (a, b) =>
+        new Date(a.next_action_at!).getTime() -
+        new Date(b.next_action_at!).getTime(),
+    )
+    .slice(0, 8);
+
   return (
-    <div className="pbody list-body">
-      <div className="sec" style={{ paddingTop: 12 }}>
+    <div className="pbody">
+      <PresencePills activity="架電中" />
+
+      {/* 今日の進捗 */}
+      <div className="sec" style={{ paddingTop: 8 }}>
         <div className="pc-top">
-          <span className="lbl">架電の進捗</span>
-          <span className="link">全{total}件</span>
+          <span className="lbl">今日の進捗</span>
+          <Link href="/dashboard" className="link">
+            詳細を見る
+          </Link>
         </div>
         <div className="pc-num">
           <b>{called}</b>
@@ -48,7 +81,7 @@ export default async function ClinicsPage() {
           <div className="cell">
             <div className="k">アポ獲得</div>
             <div className="v">
-              {appointment}
+              {appo}
               <small>件</small>
             </div>
           </div>
@@ -64,7 +97,90 @@ export default async function ClinicsPage() {
 
       <div className="divider" />
 
-      <ClinicListRealtime initial={clinics} />
+      {/* 次に電話する医院 */}
+      <div className="sec clinic">
+        <div className="sec-head">
+          <h3>次に電話する医院</h3>
+          <Link href="/clinics/list" className="link">
+            リストを表示
+          </Link>
+        </div>
+
+        {next ? (
+          <>
+            <div className="row1">
+              <StatusBadge status={next.status} />
+              {next.members && (
+                <span className="owner-mini">
+                  <Avatar
+                    name={next.members.name}
+                    color={next.members.color}
+                    size={20}
+                  />
+                  {next.members.name}
+                </span>
+              )}
+            </div>
+            <Link href={`/clinics/${next.id}`} className="name">
+              {next.name}
+            </Link>
+            {next.address && (
+              <div className="addr">
+                {next.prefecture}
+                {next.city}
+                {next.address}
+              </div>
+            )}
+            {next.phone && (
+              <a className="tel" href={`tel:${nextTel}`}>
+                <Icon name="phone" size={16} style={{ color: "var(--muted)" }} />
+                {next.phone}
+              </a>
+            )}
+            {next.latest_memo && (
+              <>
+                <div className="memo-lbl">前回メモ</div>
+                <div className="memo-tx">{next.latest_memo}</div>
+              </>
+            )}
+            <Link
+              href={`/clinics/${next.id}?tab=result`}
+              className="btn btn-primary"
+              style={{ marginTop: 18 }}
+            >
+              <Icon name="phone" fill size={22} style={{ color: "#fff" }} />
+              架電結果を入力
+            </Link>
+          </>
+        ) : (
+          <p className="empty">架電対象の医院がありません</p>
+        )}
+      </div>
+
+      <div className="divider" />
+
+      {/* 今日の予定 */}
+      <div className="sec sched">
+        <div className="sec-head">
+          <h3>今日の予定</h3>
+          <Link href="/clinics/list" className="link">
+            すべて見る
+          </Link>
+        </div>
+        {schedule.length === 0 ? (
+          <p className="empty sm">予定はまだありません</p>
+        ) : (
+          schedule.map((c) => (
+            <Link key={c.id} href={`/clinics/${c.id}`} className="item">
+              <span className="time">
+                {formatSchedule(c.next_action_at!).replace(/^\d+\/\d+\s/, "")}
+              </span>
+              <span className="cl">{c.name}</span>
+              <StatusBadge status={c.status} />
+            </Link>
+          ))
+        )}
+      </div>
     </div>
   );
 }

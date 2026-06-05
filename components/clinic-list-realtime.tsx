@@ -13,12 +13,23 @@ import {
 } from "@/components/grouped-clinic-list";
 import { useRealtimeClinics } from "@/hooks/use-realtime-clinics";
 import { callStatusNow } from "@/lib/hours";
-import { STATUS_LABEL } from "@/lib/status";
-import type { Clinic } from "@/lib/types";
+import { STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
+import type { Clinic, ClinicStatus } from "@/lib/types";
 
-export function ClinicListRealtime({ initial }: { initial: Clinic[] }) {
+export function ClinicListRealtime({
+  initial,
+  initialStatus,
+}: {
+  initial: Clinic[];
+  initialStatus?: string;
+}) {
   const { clinics } = useRealtimeClinics(initial);
-  const [filters, setFilters] = useState<Filters>({ q: "" });
+  const [filters, setFilters] = useState<Filters>({
+    q: "",
+    status: STATUS_ORDER.includes(initialStatus as ClinicStatus)
+      ? (initialStatus as ClinicStatus)
+      : undefined,
+  });
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
 
   // 絞り込み
