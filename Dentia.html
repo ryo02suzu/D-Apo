@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>Dentia — 歯科医院 架電CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700;900&family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#0c8c8b; --teal-d:#0a7877;
+    --ink:#1f2a33; --ink2:#3a4750; --muted:#6b7682; --muted2:#9aa4ae;
+    --line:#eceff1; --line2:#e3e7ea; --page:#ffffff; --card:#f6f8f9; --field:#ffffff;
+    --gray:#9aa4ae;  --gray-bg:#eef1f3;  --gray-fg:#69737d;
+    --amber:#eab308; --amber-bg:#fdf2d4; --amber-fg:#c08a05;
+    --orange:#f3722c;--orange-bg:#fde6d6;--orange-fg:#df6320;
+    --cyan:#0c8c8b;  --cyan-bg:#d3edec;  --cyan-fg:#0a8584;
+    --green:#22b14c; --green-bg:#d9f3df; --green-fg:#1a9a45;
+    --red:#ef5350;   --red-bg:#fce0df;   --red-fg:#dc4843;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Noto Sans JP',-apple-system,BlinkMacSystemFont,sans-serif;
+    background:#e9edf0; color:var(--ink);
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer}
+  svg{display:block}
+  input,textarea{font-family:inherit}
+
+  /* device frame */
+  .app-root{ --teal:#0c8c8b; }
+  .device{
+    width:390px; height:844px; background:#fff; border-radius:46px;
+    border:11px solid #11161b; box-shadow:0 30px 70px rgba(20,28,36,.34),0 6px 18px rgba(20,28,36,.18);
+    overflow:hidden; position:relative; transform-origin:center center;
+  }
+  .device-screen{ position:absolute; inset:0; display:flex; flex-direction:column; background:var(--page); }
+  .screen-scroll{ flex:1; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; }
+  .screen-scroll::-webkit-scrollbar{ width:0 }
+  .screen{ min-height:100%; display:flex; flex-direction:column; background:var(--page); }
+
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:14px 26px 2px;font-size:14px;font-weight:700;color:var(--ink)}
+  .sb-r{display:flex;align-items:center;gap:6px;color:var(--ink)}
+  .apphead{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 12px;color:var(--ink)}
+  .apphead .title{font-size:17px;font-weight:700}
+  .ah-btn{background:none;border:none;color:var(--ink);padding:6px;display:flex}
+  .ah-btn.ttl-link{color:var(--teal);font-size:15px;font-weight:600}
+  .pbody{padding:4px 18px 0;flex:1;display:flex;flex-direction:column}
+  .pbody.np{padding-top:0}
+  .pbody.list-body{padding:4px 16px 0}
+
+  .divider{height:1px;background:var(--line);margin:0 -18px}
+  .sec{padding:16px 0}
+  .sec-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:13px}
+  .sec-head h3{font-size:15px;font-weight:700;color:var(--ink)}
+  .link{font-size:13px;font-weight:600;color:var(--teal);cursor:pointer}
+
+  /* presence */
+  .presence-row{display:flex;gap:8px;flex-wrap:wrap;padding:6px 0 2px}
+  .pill{display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line2);
+        border-radius:999px;padding:6px 13px;font-size:12px;font-weight:600;color:var(--ink2);white-space:nowrap}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* progress */
+  .pc-top{display:flex;justify-content:space-between;align-items:baseline}
+  .pc-top .lbl{font-size:14px;font-weight:700;color:var(--ink)}
+  .pc-num{margin:8px 0 12px;display:flex;align-items:baseline;gap:6px}
+  .pc-num b{font-size:34px;font-weight:900;color:var(--ink);line-height:1}
+  .pc-num span{font-size:15px;color:var(--muted);font-weight:500;white-space:nowrap}
+  .bar{height:8px;border-radius:6px;background:var(--line2);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--teal);border-radius:6px;transition:width .5s ease}
+  .stat3{display:flex;margin-top:18px}
+  .stat3 .cell{flex:1;text-align:center;padding:0 4px}
+  .stat3 .cell+.cell{border-left:1px solid var(--line)}
+  .stat3 .k{font-size:12px;color:var(--muted);font-weight:500}
+  .stat3 .v{font-size:19px;font-weight:800;color:var(--ink);margin-top:5px;white-space:nowrap}
+  .stat3 .v small{font-size:12px;font-weight:600;color:var(--muted);margin-left:1px}
+
+  /* badge */
+  .badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:7px;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap}
+  .b-gray{background:var(--gray-bg);color:var(--gray-fg)}
+  .b-amber{background:var(--amber-bg);color:var(--amber-fg)}
+  .b-orange{background:var(--orange-bg);color:var(--orange-fg)}
+  .b-cyan{background:var(--cyan-bg);color:var(--cyan-fg)}
+  .b-green{background:var(--green-bg);color:var(--green-fg)}
+  .b-red{background:var(--red-bg);color:var(--red-fg)}
+
+  /* clinic block (home) */
+  .clinic .row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .clinic .row1 .ago{font-size:13px;color:var(--muted2);font-weight:500}
+  .clinic .name{font-size:20px;font-weight:800;color:var(--ink);letter-spacing:.3px}
+  .clinic .addr{font-size:13px;color:var(--muted);margin-top:7px;font-weight:500}
+  .tel{display:inline-flex;align-items:center;gap:7px;font-size:14px;color:var(--ink2);margin-top:9px;font-weight:600;white-space:nowrap}
+  .memo-lbl{font-size:12px;color:var(--muted2);margin-top:16px;font-weight:600}
+  .memo-tx{font-size:14px;color:var(--ink2);margin-top:5px;font-weight:500;line-height:1.6}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:none;
+       font-weight:700;border-radius:14px;transition:transform .08s ease,background .15s}
+  .btn:active{transform:scale(.985)}
+  .btn-primary{background:var(--teal);color:#fff;font-size:18px;padding:17px;box-shadow:0 6px 16px color-mix(in srgb,var(--teal) 28%,transparent)}
+  .btn-primary.disabled{background:var(--line2);color:var(--muted2);box-shadow:none}
+  .btn-primary.ok{background:var(--green)}
+  .btn-outline{background:var(--field);color:var(--teal);border:1.5px solid color-mix(in srgb,var(--teal) 30%,var(--line2));font-size:15px;padding:14px}
+  .clinic .btn-primary{margin-top:18px}
+
+  /* schedule */
+  .sched .item{display:flex;align-items:center;gap:14px;padding:13px 0;font-size:14px;cursor:pointer}
+  .sched .item+.item{border-top:1px solid var(--line)}
+  .sched .time{font-weight:800;color:var(--ink);width:48px;flex:none}
+  .sched .cl{flex:1;color:var(--ink2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* tab bar */
+  .tabbar{flex:none;display:flex;align-items:flex-end;justify-content:space-around;
+          border-top:1px solid var(--line);padding:7px 6px 11px;background:var(--page)}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--muted2);flex:1;background:none;border:none}
+  .tab.on{color:var(--teal)}
+  .tab.fab{gap:6px;color:var(--ink2)}
+  .fab-c{width:54px;height:54px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;
+         box-shadow:0 8px 18px color-mix(in srgb,var(--teal) 38%,transparent)}
+
+  /* toast */
+  .toast{position:absolute;left:14px;right:14px;top:46px;z-index:40;display:flex;align-items:center;gap:11px;
+         background:#fff;border:1px solid var(--line2);border-radius:15px;padding:11px 14px;
+         box-shadow:0 12px 30px rgba(20,28,36,.18);animation:toastIn .35s cubic-bezier(.2,.9,.3,1.3)}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+  .toast .t-body{flex:1;min-width:0}
+  .toast .t-body b{display:block;font-size:13px;font-weight:700;color:var(--ink)}
+  .toast .t-body span{display:block;font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .toast .t-dot{width:9px;height:9px;border-radius:50%;flex:none;animation:pulse 1.4s infinite}
+  .av{border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+
+  /* list */
+  .search-bar{display:flex;align-items:center;gap:9px;border:1.5px solid var(--line2);border-radius:12px;padding:11px 13px;background:var(--field);margin-top:6px}
+  .search-bar input{flex:1;border:none;outline:none;background:transparent;font-size:14px;color:var(--ink)}
+  .search-bar input::placeholder{color:var(--muted2)}
+  .search-bar .clr{background:none;border:none;color:var(--muted2);display:flex;padding:2px}
+  .chips{display:flex;gap:8px;overflow-x:auto;padding:11px 0 2px;scrollbar-width:none}
+  .chips::-webkit-scrollbar{height:0}
+  .chip{flex:none;border:1.5px solid var(--line2);background:var(--field);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap}
+  .chip.on{background:var(--teal);border-color:var(--teal);color:#fff}
+  .chip-gray.on{background:var(--gray);border-color:var(--gray)}
+  .chip-amber.on{background:var(--amber-fg);border-color:var(--amber-fg)}
+  .chip-orange.on{background:var(--orange);border-color:var(--orange)}
+  .chip-cyan.on{background:var(--cyan);border-color:var(--cyan)}
+  .chip-green.on{background:var(--green);border-color:var(--green)}
+  .chip-red.on{background:var(--red);border-color:var(--red)}
+  .list-count{font-size:12px;color:var(--muted);font-weight:600;padding:14px 2px 8px}
+  .cards{display:flex;flex-direction:column;gap:12px;padding-bottom:18px}
+  .empty{text-align:center;color:var(--muted2);font-size:14px;font-weight:500;padding:24px 0}
+
+  .listcard{background:var(--field);border:1px solid var(--line2);border-radius:14px;padding:15px 16px;transition:box-shadow .2s,border-color .2s}
+  .listcard.flash{border-color:var(--teal);box-shadow:0 0 0 3px color-mix(in srgb,var(--teal) 18%,transparent);animation:flashPop .5s}
+  @keyframes flashPop{0%{transform:scale(1)}40%{transform:scale(1.015)}100%{transform:scale(1)}}
+  .listcard .r1{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .listcard .r1 .ago{font-size:12px;color:var(--muted2);font-weight:500}
+  .listcard .nm{font-size:18px;font-weight:800;color:var(--ink)}
+  .listcard .ad{font-size:13px;color:var(--muted);margin-top:6px;font-weight:500}
+  .listcard .te{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);margin-top:8px;font-weight:600;white-space:nowrap}
+  .listcard .foot{display:flex;align-items:center;justify-content:space-between;margin-top:13px;padding-top:12px;border-top:1px solid var(--line)}
+  .listcard .meta{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted);font-weight:500}
+  .listcard .meta span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .listcard .mini-fab{width:42px;height:42px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 6px 14px color-mix(in srgb,var(--teal) 32%,transparent)}
+
+  /* detail */
+  .p3-top{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .p3-top .name{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:.3px}
+  .call-fab{width:50px;height:50px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;
+            box-shadow:0 8px 18px color-mix(in srgb,var(--teal) 34%,transparent);flex:none}
+  .badges{display:flex;gap:8px;margin-top:14px}
+  .tabs{display:flex;border-bottom:1.5px solid var(--line);margin-top:20px}
+  .tabs .t{flex:1;text-align:center;padding:12px 0 13px;font-size:15px;font-weight:700;color:var(--muted2);position:relative;cursor:pointer}
+  .tabs .t.on{color:var(--teal)}
+  .tabs .t.on::after{content:"";position:absolute;left:0;right:0;bottom:-1.5px;height:2.5px;background:var(--teal);border-radius:2px}
+  .timeline{padding-top:18px}
+  .tl{display:flex;gap:14px}
+  .tl .rail{display:flex;flex-direction:column;align-items:center;flex:none;width:14px}
+  .tl .ring{width:13px;height:13px;border-radius:50%;border:2.5px solid var(--cyan);background:var(--page);margin-top:4px;flex:none}
+  .tl .ring.r-gray{border-color:var(--gray)}.tl .ring.r-amber{border-color:var(--amber)}
+  .tl .ring.r-orange{border-color:var(--orange)}.tl .ring.r-cyan{border-color:var(--cyan)}
+  .tl .ring.r-green{border-color:var(--green)}.tl .ring.r-red{border-color:var(--red)}
+  .tl .stem{width:2px;flex:1;background:var(--line2);margin-top:4px}
+  .tl .body{padding-bottom:22px;flex:1}
+  .tl:last-child .body{padding-bottom:8px}
+  .tl .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tl .dt{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .tl .who{font-size:13px;color:var(--ink2);font-weight:600;white-space:nowrap}
+  .tl .meta .badge{margin-left:auto}
+  .tl .note{font-size:14px;color:var(--ink2);margin-top:8px;font-weight:500;line-height:1.6}
+  .info{padding-top:8px}
+  .info-row{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .info-row .ik{width:78px;flex:none;font-size:13px;color:var(--muted);font-weight:600}
+  .info-row .iv{font-size:14px;color:var(--ink);font-weight:600;line-height:1.5}
+  .info-row .iv.link{color:var(--teal)}
+  .map{display:flex;align-items:center;gap:9px;margin-top:16px;color:var(--teal);font-size:14px;font-weight:700;
+       border:1.5px dashed color-mix(in srgb,var(--teal) 35%,var(--line2));border-radius:12px;padding:16px;justify-content:center}
+  .p3foot,.p2foot{margin-top:auto;padding:18px 0 22px}
+
+  /* result input */
+  .p2-name{font-size:22px;font-weight:800;color:var(--ink);text-align:center;letter-spacing:.3px;margin-top:8px}
+  .p2-tel{display:block;text-align:center;font-size:15px;color:var(--ink2);font-weight:600;margin-top:6px}
+  .fld-lbl{font-size:14px;font-weight:700;color:var(--ink);margin:22px 0 12px}
+  .stgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+  .stbtn{border:1.5px solid transparent;border-radius:16px;padding:16px 8px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:15px;font-weight:700;transition:transform .08s,box-shadow .15s}
+  .stbtn:active{transform:scale(.97)}
+  .stbtn.on{box-shadow:0 0 0 2.5px var(--page),0 0 0 5px currentColor}
+  .stbtn .circ{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .s-gray{background:var(--gray-bg);color:var(--gray-fg)}.s-gray .line-ic{color:var(--gray)}
+  .s-amber{background:var(--amber-bg);color:var(--amber-fg)}.s-amber .line-ic{color:var(--amber-fg)}
+  .s-orange{background:var(--orange-bg);color:var(--orange-fg)}.s-orange .circ{background:var(--orange)}
+  .s-cyan{background:var(--cyan-bg);color:var(--cyan-fg)}.s-cyan .circ{background:var(--cyan)}
+  .s-green{background:var(--green-bg);color:var(--green-fg)}.s-green .circ{background:var(--green)}
+  .s-red{background:var(--red-bg);color:var(--red-fg)}.s-red .circ{background:var(--red)}
+  .ta-wrap{border:1.5px solid var(--line2);border-radius:14px;padding:13px 14px 7px;background:var(--field)}
+  .ta-wrap textarea{width:100%;border:none;outline:none;resize:none;font-size:14px;color:var(--ink);min-height:74px;background:transparent;line-height:1.6}
+  .ta-wrap textarea::placeholder{color:var(--muted2)}
+  .ta-count{text-align:right;font-size:12px;color:var(--muted2);font-weight:500}
+  .voice{margin-top:14px}
+  .p2foot .cap{text-align:center;font-size:13px;color:var(--muted2);margin-top:13px;font-weight:500}
+
+  /* history feed */
+  .feed{display:flex;flex-direction:column;padding:10px 0 18px}
+  .feed-item{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .fi-body{flex:1;min-width:0}
+  .fi-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .fi-top b{font-size:15px;font-weight:700;color:var(--ink)}
+  .fi-time{font-size:12px;color:var(--muted2);font-weight:600;white-space:nowrap}
+  .fi-meta{display:flex;align-items:center;gap:9px;margin-top:7px}
+  .fi-who{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+  .fi-note{font-size:13px;color:var(--ink2);margin-top:7px;font-weight:500;line-height:1.55}
+
+  /* dashboard */
+  .dash-card{background:var(--card);border:1px solid var(--line2);border-radius:16px;padding:20px;margin-top:12px}
+  .dash-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+  .dash-head h4{font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .dash3,.dash2{display:flex}
+  .dash3 .c,.dash2 .c{flex:1;text-align:center}
+  .dash3 .k,.dash2 .k{font-size:13px;color:var(--muted);font-weight:600}
+  .dash3 .v,.dash2 .v{font-size:21px;font-weight:900;color:var(--ink);margin-top:7px}
+  .dash3 .v small,.dash2 .v small{font-size:12px;font-weight:700;color:var(--muted);margin-left:1px}
+  .dash-bar{height:1px;background:var(--line2);margin:18px 0}
+  .cc-block{margin-top:20px;padding-bottom:8px}
+  .cc-block h2{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px}
+  .sumrow{display:flex;align-items:center;gap:11px;padding:11px 0;font-size:14px;border-bottom:1px solid var(--line);cursor:pointer}
+  .sumrow .sdot{width:10px;height:10px;border-radius:50%;flex:none}
+  .sumrow .slabel{color:var(--ink2);font-weight:600}
+  .sumrow .scount{margin-left:auto;color:var(--ink);font-weight:800;white-space:nowrap}
+  .sumrow .scount small{font-size:11px;font-weight:600;color:var(--muted);margin-left:1px}
+  .hbars{display:flex;flex-direction:column;gap:11px;padding-top:6px}
+  .hbar{display:flex;align-items:center;gap:10px}
+  .hb-label{width:72px;flex:none;font-size:12px;color:var(--ink2);font-weight:600}
+  .hb-track{flex:1;height:9px;background:var(--line2);border-radius:6px;overflow:hidden}
+  .hb-track i{display:block;height:100%;border-radius:6px;transition:width .5s}
+  .hb-num{width:20px;text-align:right;font-size:13px;font-weight:800;color:var(--ink)}
+
+  /* in-call screen */
+  .incall-screen{background:var(--page)}
+  .incall-hero{display:flex;flex-direction:column;align-items:center;padding:8px 0 20px}
+  .call-pulse-ring{position:relative;width:96px;height:96px;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+  .call-pulse-ring::before,.call-pulse-ring::after{
+    content:'';position:absolute;inset:0;border-radius:50%;
+    border:2px solid var(--teal);animation:callRipple 2s ease-out infinite;
+  }
+  .call-pulse-ring::after{animation-delay:.7s}
+  @keyframes callRipple{
+    0%{transform:scale(.7);opacity:.7}
+    100%{transform:scale(1.6);opacity:0}
+  }
+  .call-pulse-fab{width:72px;height:72px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;
+                  box-shadow:0 8px 24px color-mix(in srgb,var(--teal) 42%,transparent);position:relative;z-index:1}
+  .incall-name{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:.3px;margin-top:18px;text-align:center}
+  .incall-tel{font-size:14px;color:var(--muted);font-weight:500;margin-top:6px}
+  .incall-timer{font-size:26px;font-weight:900;color:var(--teal);margin-top:10px;font-variant-numeric:tabular-nums;letter-spacing:.06em}
+  .incall-foot{padding:0 18px 28px}
+  .btn-danger{background:var(--red);color:#fff;box-shadow:0 6px 16px color-mix(in srgb,var(--red) 28%,transparent);margin-bottom:12px}
+  .memo-hint{font-size:12px;color:var(--muted2);font-weight:500;text-align:center;margin-top:10px}
+
+  /* density */
+  .dens-compact .sec{padding:12px 0}
+  .dens-compact .pc-num b{font-size:30px}
+  .dens-compact .listcard{padding:13px 14px}
+  .dens-compact .cards{gap:10px}
+  .dens-compact .stbtn{padding:13px 8px 11px}
+  .dens-comfy .sec{padding:20px 0}
+  .dens-comfy .pc-num b{font-size:38px}
+  .dens-comfy .listcard{padding:18px 18px}
+  .dens-comfy .cards{gap:15px}
+
+  /* dark */
+  .dark{
+    --ink:#eef2f4;--ink2:#cdd5da;--muted:#8c97a1;--muted2:#6b7682;
+    --line:#262f37;--line2:#313b44;--page:#161c22;--card:#1d242b;--field:#1d242b;
+    --gray-bg:#2a323a;--gray-fg:#aab4bd;
+    --amber-bg:#3a3318;--amber-fg:#e9c558;
+    --orange-bg:#3a2a1c;--orange-fg:#f0925a;
+    --cyan-bg:#16322f;--cyan-fg:#3fc9c2;
+    --green-bg:#193322;--green-fg:#4fcf76;
+    --red-bg:#3a201f;--red-fg:#f08583;
+  }
+  .dark body,.dark{background:#0c1116}
+  .dark .device{border-color:#05080b;background:#161c22}
+
+  #tweaks-root,.tweaks-panel{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- ═══════════════ DATA ═══════════════ -->
+<script>
+(function(){
+  const STATUS={
+    none:    {key:'none',    label:'未架電',       color:'gray'  },
+    noanswer:{key:'noanswer',label:'不通',         color:'amber' },
+    absent:  {key:'absent',  label:'担当者不在',   color:'orange'},
+    heard:   {key:'heard',   label:'ヒアリング済', color:'cyan'  },
+    appo:    {key:'appo',    label:'アポ獲得',     color:'green' },
+    reject:  {key:'reject',  label:'お断り',       color:'red'   },
+  };
+  const STATUS_ORDER=['none','noanswer','absent','heard','appo','reject'];
+  const USERS={
+    me:    {id:'me',    name:'山田 太郎',short:'山',color:'#5b8def'},
+    suzuki:{id:'suzuki',name:'鈴木 花子',short:'鈴',color:'#e0729e'},
+    tanaka:{id:'tanaka',name:'田中 一郎',short:'田',color:'#6bb38a'},
+    sato:  {id:'sato',  name:'佐藤 美咲',short:'佐',color:'#c79a3e'},
+  };
+  const HOURS=[
+    '平日 9:00–18:00 / 土 9:00–13:00',
+    '平日 9:30–19:00 / 土日 休',
+    '月火水金 9:00–18:30 / 木土 9:00–13:00',
+    '平日 10:00–13:00, 14:30–19:00 / 土 〜17:00',
+    '平日 9:00–12:30, 14:00–18:00 / 木 休',
+  ];
+  const NOW=new Date('2026-06-05T09:41:00');
+  function ago(mins){return new Date(NOW.getTime()-mins*60000);}
+  const SEED=[
+    ['さくら歯科医院',        '新宿区', '西新宿1-2-3 さくらビル2F',    '03-1234-5678','absent',  'me',     4320,'院長不在。木曜午後に再連絡の約束。'],
+    ['みなみ歯科クリニック',  '渋谷区', '神南1-15-8 渋谷フロント3F',   '03-2345-6789','heard',   'suzuki', 180, '矯正の新患集客に課題感あり。資料送付済み。'],
+    ['アオバデンタルクリニック','世田谷区','三軒茶屋2-11-4',            '03-3456-7890','appo',    'me',     1440,'6/12 15:00に院長と商談アポ獲得。'],
+    ['ひかり歯科',            '杉並区', '高円寺南3-22-1 ハイツ高円寺', '03-4567-8901','noanswer','tanaka', 60,  '呼び出しのみ。昼休み明けに再架電。'],
+    ['なかの総合歯科',        '中野区', '中野5-33-7 中野駅前ビル6F',   '03-5678-9012','none',    null,     null,''],
+    ['グリーン歯科医院',      '目黒区', '自由が丘1-8-12',              '03-6789-0123','absent',  'sato',   2880,'受付の方対応。担当は火曜在席とのこと。'],
+    ['さとう歯科クリニック',  '品川区', '大井町2-4-9 大井タワー4F',    '03-7890-1234','heard',   'suzuki', 300, '自費診療の予約管理をExcelで運用中。'],
+    ['うみのファミリー歯科',  '大田区', '蒲田4-18-6',                  '03-8901-2345','reject',  'me',     5760,'現状システムで満足、今回は見送り。'],
+    ['けやき歯科医院',        '港区',   '麻布十番1-5-2 けやき坂ビル',  '03-9012-3456','none',    null,     null,''],
+    ['あおぞらデンタルオフィス','文京区','本郷3-25-11',                 '03-0123-4567','appo',    'tanaka', 720, '6/10 11:00デモ確定。分院長も同席予定。'],
+    ['とよた歯科',            '豊島区', '池袋2-40-3 池袋セントラル5F', '03-1357-2468','noanswer','me',     120, '話し中。15分後に再架電予定。'],
+    ['ねりま中央歯科',        '練馬区', '練馬1-12-7',                  '03-2468-1357','absent',  'suzuki', 1440,'ホームページ刷新を検討中との情報。'],
+    ['みどり歯科クリニック',  '江東区', '豊洲3-2-20 豊洲フロント8F',   '03-3579-4680','heard',   'sato',   480, 'リコール率の改善に関心。次回数値共有。'],
+    ['やまもと歯科医院',      '台東区', '上野6-7-1 上野駅前ビル3F',    '03-4680-3579','none',    null,     null,''],
+    ['しおかぜ歯科',          '墨田区', '錦糸町4-9-5',                 '03-5791-6802','appo',    'me',     2160,'6/15 10:30に来院デモのアポ。'],
+    ['はなぞの歯科クリニック','北区',   '赤羽1-30-14 赤羽ハウス2F',    '03-6802-5791','reject',  'tanaka', 4320,'予算が合わず今期は見送り。来期再打診。'],
+    ['つきしま歯科医院',      '中央区', '月島2-15-6',                  '03-7913-8024','none',    null,     null,''],
+    ['ふじ歯科クリニック',    '板橋区', '成増2-18-9 成増スカイビル4F', '03-8024-7913','noanswer','suzuki', 240, '留守番電話。折り返し依頼を残した。'],
+    ['こもれび歯科',          '足立区', '北千住3-22-1',                '03-9135-0246','heard',   'me',     900, '訪問歯科に注力したい意向。担当者◎。'],
+    ['ゆめのデンタルクリニック','葛飾区','亀有5-11-3 亀有プラザ2F',    '03-0246-9135','absent',  'sato',   1440,'院長は午前のみ在席。次は午前に架電。'],
+  ];
+  function buildHistory(idx,statusKey,ownerId,lastMins,memo){
+    if(statusKey==='none')return[];
+    const owner=ownerId||'me';
+    const hist=[{at:ago(lastMins).toISOString(),who:owner,status:statusKey,note:memo||''}];
+    const olders=[
+      {status:'noanswer',note:'呼び出し音のみ。'},
+      {status:'absent',  note:'担当者不在。受付対応。'},
+      {status:'none',    note:'初回リストアップ。'},
+    ];
+    const n=idx%3;
+    for(let i=0;i<n;i++){
+      const o=olders[i];
+      hist.push({at:ago(lastMins+(i+1)*2880+idx*60).toISOString(),who:i%2===0?'suzuki':'tanaka',status:o.status,note:o.note});
+    }
+    return hist;
+  }
+  const SCHEDULE_TIMES=['6/13 14:00','6/12 15:00','6/10 11:00','6/15 10:30',null,null,null];
+  const CLINICS=SEED.map((s,i)=>{
+    const[name,ward,addr,tel,status,ownerId,lastMins,memo]=s;
+    const hasSched=(status==='appo'||status==='absent'||status==='heard')&&i%2===0;
+    return{
+      id:'c'+(i+1),name,tel,prefecture:'東京都',city:ward,
+      address:'東京都'+ward+addr,hours:HOURS[i%HOURS.length],
+      status,owner:ownerId,lastMemo:memo,
+      updatedAt:lastMins==null?null:ago(lastMins).toISOString(),
+      nextSchedule:hasSched?SCHEDULE_TIMES[i%SCHEDULE_TIMES.length]:null,
+      history:buildHistory(i,status,ownerId,lastMins,memo),
+    };
+  });
+  const TODAY_SCHEDULE=[
+    {time:'14:00',clinicId:'c4', status:'absent'  },
+    {time:'15:30',clinicId:'c2', status:'heard'   },
+    {time:'16:30',clinicId:'c5', status:'none'    },
+    {time:'17:15',clinicId:'c11',status:'noanswer'},
+  ];
+  window.Dentia=window.Dentia||{};
+  Object.assign(window.Dentia,{STATUS,STATUS_ORDER,USERS,CLINICS,TODAY_SCHEDULE,NOW:NOW.toISOString()});
+})();
+</script>
+
+<!-- ═══════════════ REALTIME ═══════════════ -->
+<script>
+(function(){
+  const CH='dentia-sync-v1';
+  const TAB_ID=Math.random().toString(36).slice(2,8);
+  const BOT_NOTES={
+    noanswer:['呼び出し音のみ。後ほど再架電。','話し中。時間を空けて再トライ。','留守電。折り返し依頼を残した。'],
+    absent:  ['受付対応。担当は午後在席とのこと。','院長不在。明日午前に再連絡。','担当者会議中。夕方かけ直す。'],
+    heard:   ['新患集客に課題感あり。資料送付。','予約管理をExcel運用中。改善余地大。','リコール率の改善に関心あり。'],
+    appo:    ['来院デモのアポ獲得！','院長と商談アポ確定。','オンラインデモの日程確定。'],
+    reject:  ['現状システムで満足、今回は見送り。','予算が合わず今期は見送り。'],
+  };
+  const ACTIVITIES=['架電中','メモを更新中','一覧を閲覧中','医院詳細を確認中','ステータスを更新中'];
+  function pick(a){return a[Math.floor(Math.random()*a.length)];}
+  function makeRealtime({onRemote,onPresence,getClinics}){
+    let channel=null;
+    try{channel=new BroadcastChannel(CH);}catch(e){channel=null;}
+    if(channel){
+      channel.onmessage=(ev)=>{
+        const m=ev.data;
+        if(!m||m.tab===TAB_ID)return;
+        if(m.kind==='update')onRemote&&onRemote(m.payload,true);
+        if(m.kind==='presence')onPresence&&onPresence(m.payload,true);
+      };
+    }
+    function broadcast(kind,payload){
+      if(channel){try{channel.postMessage({kind,payload,tab:TAB_ID});}catch(e){}}
+    }
+    let botTimer=null,presenceTimer=null;
+    function startBots(){
+      stop();
+      const tick=()=>{
+        const clinics=getClinics?getClinics():window.Dentia.CLINICS;
+        const colleagues=['suzuki','tanaka','sato'];
+        const who=pick(colleagues);
+        const pool=clinics.filter(c=>c.owner!=='me');
+        const target=pick(pool.length?pool:clinics);
+        const statusKeys=['noanswer','absent','heard','appo','reject'];
+        const status=pick(statusKeys);
+        const note=pick(BOT_NOTES[status]||['']);
+        const update={
+          id:'u'+Date.now()+Math.random().toString(36).slice(2,5),
+          clinicId:target.id,status,note,who,
+          at:new Date().toISOString(),
+          text:`${target.name}を「${window.Dentia.STATUS[status].label}」に更新`,
+          remote:true,
+        };
+        onRemote&&onRemote(update,false);
+        broadcast('update',update);
+        botTimer=setTimeout(tick,7000+Math.random()*6000);
+      };
+      botTimer=setTimeout(tick,4500);
+      const ptick=()=>{
+        const colleagues=['suzuki','tanaka','sato'];
+        const active=colleagues.filter(()=>Math.random()>0.25).map(id=>({id,activity:pick(ACTIVITIES)}));
+        const payload=active.length?active:[{id:'suzuki',activity:'架電中'}];
+        onPresence&&onPresence(payload,false);
+        broadcast('presence',payload);
+        presenceTimer=setTimeout(ptick,3500+Math.random()*2500);
+      };
+      ptick();
+    }
+    function stop(){
+      if(botTimer)clearTimeout(botTimer);
+      if(presenceTimer)clearTimeout(presenceTimer);
+      botTimer=presenceTimer=null;
+    }
+    function pushUpdate(update){broadcast('update',update);}
+    return{broadcast:pushUpdate,startBots,stop,TAB_ID};
+  }
+  window.Dentia=window.Dentia||{};
+  window.Dentia.makeRealtime=makeRealtime;
+})();
+</script>
+
+<!-- ═══════════════ TWEAKS PANEL ═══════════════ -->
+<script type="text/babel">
+const __TWEAKS_STYLE=`
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;
+    max-height:calc(100vh - 32px);display:flex;flex-direction:column;
+    transform:scale(var(--dc-inv-zoom,1));transform-origin:bottom right;
+    background:rgba(250,249,247,.78);color:#29261b;
+    -webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);
+    border:.5px solid rgba(255,255,255,.6);border-radius:14px;
+    box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);
+    font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;
+    padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);
+    width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;
+    overflow-y:auto;overflow-x:hidden;min-height:0;
+    scrollbar-width:thin;scrollbar-color:rgba(0,0,0,.15) transparent}
+  .twk-body::-webkit-scrollbar{width:8px}
+  .twk-body::-webkit-scrollbar-track{background:transparent;margin:2px}
+  .twk-body::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15);border-radius:4px;
+    border:2px solid transparent;background-clip:content-box}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-val{color:rgba(41,38,27,.5);font-variant-numeric:tabular-nums}
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-sect:first-child{padding-top:0}
+  .twk-field{appearance:none;box-sizing:border-box;width:100%;min-width:0;height:26px;padding:0 8px;
+    border:.5px solid rgba(0,0,0,.1);border-radius:7px;
+    background:rgba(255,255,255,.6);color:inherit;font:inherit;outline:none}
+  .twk-field:focus{border-color:rgba(0,0,0,.25);background:rgba(255,255,255,.85)}
+  select.twk-field{padding-right:22px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='rgba(0,0,0,.5)' d='M0 0h10L5 6z'/></svg>");
+    background-repeat:no-repeat;background-position:right 8px center}
+  .twk-slider{appearance:none;-webkit-appearance:none;width:100%;height:4px;margin:6px 0;
+    border-radius:999px;background:rgba(0,0,0,.12);outline:none}
+  .twk-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:.5px solid rgba(0,0,0,.12);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:default}
+  .twk-seg{position:relative;display:flex;padding:2px;border-radius:8px;
+    background:rgba(0,0,0,.06);user-select:none}
+  .twk-seg-thumb{position:absolute;top:2px;bottom:2px;border-radius:6px;
+    background:rgba(255,255,255,.9);box-shadow:0 1px 2px rgba(0,0,0,.12);
+    transition:left .15s cubic-bezier(.3,.7,.4,1),width .15s}
+  .twk-seg button{appearance:none;position:relative;z-index:1;flex:1;border:0;
+    background:transparent;color:inherit;font:inherit;font-weight:500;min-height:22px;
+    border-radius:6px;cursor:default;padding:4px 6px;line-height:1.2;overflow-wrap:anywhere}
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;
+    background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+  .twk-chips{display:flex;gap:6px}
+  .twk-chip{position:relative;appearance:none;flex:1;min-width:0;height:46px;
+    padding:0;border:0;border-radius:6px;overflow:hidden;cursor:default;
+    box-shadow:0 0 0 .5px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.06);
+    transition:transform .12s cubic-bezier(.3,.7,.4,1),box-shadow .12s}
+  .twk-chip:hover{transform:translateY(-1px);box-shadow:0 0 0 .5px rgba(0,0,0,.18),0 4px 10px rgba(0,0,0,.12)}
+  .twk-chip[data-on="1"]{box-shadow:0 0 0 1.5px rgba(0,0,0,.85),0 2px 6px rgba(0,0,0,.15)}
+  .twk-chip svg{position:absolute;top:6px;left:6px;width:13px;height:13px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+`;
+
+function useTweaks(defaults){
+  const[values,setValues]=React.useState(defaults);
+  const setTweak=React.useCallback((keyOrEdits,val)=>{
+    const edits=typeof keyOrEdits==='object'&&keyOrEdits!==null?keyOrEdits:{[keyOrEdits]:val};
+    setValues((prev)=>({...prev,...edits}));
+    window.parent.postMessage({type:'__edit_mode_set_keys',edits},'*');
+    window.dispatchEvent(new CustomEvent('tweakchange',{detail:edits}));
+  },[]);
+  return[values,setTweak];
+}
+
+function TweaksPanel({title='Tweaks',children}){
+  const[open,setOpen]=React.useState(false);
+  const dragRef=React.useRef(null);
+  const offsetRef=React.useRef({x:16,y:16});
+  const PAD=16;
+  const clamp=React.useCallback(()=>{
+    const p=dragRef.current;if(!p)return;
+    const w=p.offsetWidth,h=p.offsetHeight;
+    const mr=Math.max(PAD,window.innerWidth-w-PAD),mb=Math.max(PAD,window.innerHeight-h-PAD);
+    offsetRef.current={x:Math.min(mr,Math.max(PAD,offsetRef.current.x)),y:Math.min(mb,Math.max(PAD,offsetRef.current.y))};
+    p.style.right=offsetRef.current.x+'px';p.style.bottom=offsetRef.current.y+'px';
+  },[]);
+  React.useEffect(()=>{
+    if(!open)return;
+    clamp();
+    const ro=typeof ResizeObserver!=='undefined'?new ResizeObserver(clamp):null;
+    if(ro){ro.observe(document.documentElement);return()=>ro.disconnect();}
+    window.addEventListener('resize',clamp);return()=>window.removeEventListener('resize',clamp);
+  },[open,clamp]);
+  React.useEffect(()=>{
+    const h=(e)=>{
+      const t=e?.data?.type;
+      if(t==='__activate_edit_mode')setOpen(true);
+      else if(t==='__deactivate_edit_mode')setOpen(false);
+    };
+    window.addEventListener('message',h);
+    window.parent.postMessage({type:'__edit_mode_available'},'*');
+    return()=>window.removeEventListener('message',h);
+  },[]);
+  const dismiss=()=>{setOpen(false);window.parent.postMessage({type:'__edit_mode_dismissed'},'*');};
+  const onDragStart=(e)=>{
+    const p=dragRef.current;if(!p)return;
+    const r=p.getBoundingClientRect(),sx=e.clientX,sy=e.clientY;
+    const sr=window.innerWidth-r.right,sb=window.innerHeight-r.bottom;
+    const move=(ev)=>{offsetRef.current={x:sr-(ev.clientX-sx),y:sb-(ev.clientY-sy)};clamp();};
+    const up=()=>{window.removeEventListener('mousemove',move);window.removeEventListener('mouseup',up);};
+    window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+  };
+  if(!open)return null;
+  return(
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" style={{right:offsetRef.current.x,bottom:offsetRef.current.y}}>
+        <div className="twk-hd" onMouseDown={onDragStart}>
+          <b>{title}</b>
+          <button className="twk-x" onMouseDown={e=>e.stopPropagation()} onClick={dismiss}>✕</button>
+        </div>
+        <div className="twk-body">{children}</div>
+      </div>
+    </>
+  );
+}
+function TweakSection({label,children}){return(<><div className="twk-sect">{label}</div>{children}</>);}
+function TweakRow({label,value,children,inline=false}){
+  return(<div className={inline?'twk-row twk-row-h':'twk-row'}><div className="twk-lbl"><span>{label}</span>{value!=null&&<span className="twk-val">{value}</span>}</div>{children}</div>);
+}
+function TweakToggle({label,value,onChange}){
+  return(<div className="twk-row twk-row-h"><div className="twk-lbl"><span>{label}</span></div><button type="button" className="twk-toggle" data-on={value?'1':'0'} role="switch" aria-checked={!!value} onClick={()=>onChange(!value)}><i/></button></div>);
+}
+function TweakRadio({label,value,options,onChange}){
+  const trackRef=React.useRef(null);
+  const[dragging,setDragging]=React.useState(false);
+  const valueRef=React.useRef(value);valueRef.current=value;
+  const labelLen=(o)=>String(typeof o==='object'?o.label:o).length;
+  const maxLen=options.reduce((m,o)=>Math.max(m,labelLen(o)),0);
+  const fits=maxLen<=({2:16,3:10}[options.length]??0);
+  if(!fits){
+    const resolve=(s)=>{const m=options.find((o)=>String(typeof o==='object'?o.value:o)===s);return m===undefined?s:typeof m==='object'?m.value:m;};
+    return<TweakSelect label={label} value={value} options={options} onChange={(s)=>onChange(resolve(s))}/>;
+  }
+  const opts=options.map((o)=>(typeof o==='object'?o:{value:o,label:o}));
+  const idx=Math.max(0,opts.findIndex((o)=>o.value===value));
+  const n=opts.length;
+  const segAt=(clientX)=>{const r=trackRef.current.getBoundingClientRect();const inner=r.width-4;const i=Math.floor(((clientX-r.left-2)/inner)*n);return opts[Math.max(0,Math.min(n-1,i))].value;};
+  const onPD=(e)=>{
+    setDragging(true);const v0=segAt(e.clientX);if(v0!==valueRef.current)onChange(v0);
+    const move=(ev)=>{if(!trackRef.current)return;const v=segAt(ev.clientX);if(v!==valueRef.current)onChange(v);};
+    const up=()=>{setDragging(false);window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);};
+    window.addEventListener('pointermove',move);window.addEventListener('pointerup',up);
+  };
+  return(<TweakRow label={label}><div ref={trackRef} role="radiogroup" onPointerDown={onPD} className={dragging?'twk-seg dragging':'twk-seg'}><div className="twk-seg-thumb" style={{left:`calc(2px + ${idx} * (100% - 4px) / ${n})`,width:`calc((100% - 4px) / ${n})`}}/>{opts.map((o)=>(<button key={o.value} type="button" role="radio" aria-checked={o.value===value}>{o.label}</button>))}</div></TweakRow>);
+}
+function TweakSelect({label,value,options,onChange}){
+  return(<TweakRow label={label}><select className="twk-field" value={value} onChange={(e)=>onChange(e.target.value)}>{options.map((o)=>{const v=typeof o==='object'?o.value:o;const l=typeof o==='object'?o.label:o;return<option key={v} value={v}>{l}</option>;})}</select></TweakRow>);
+}
+function __twkIsLight(hex){const h=String(hex).replace('#','');const x=h.length===3?h.replace(/./g,(c)=>c+c):h.padEnd(6,'0');const n=parseInt(x.slice(0,6),16);if(Number.isNaN(n))return true;const r=(n>>16)&255,g=(n>>8)&255,b=n&255;return r*299+g*587+b*114>148000;}
+const __TwkCheck=({light})=>(<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 7.2 5.8 10 11 4.2" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" stroke={light?'rgba(0,0,0,.78)':'#fff'}/></svg>);
+function TweakColor({label,value,options,onChange}){
+  if(!options||!options.length){return(<div className="twk-row twk-row-h"><div className="twk-lbl"><span>{label}</span></div><input type="color" className="twk-swatch" value={value} onChange={(e)=>onChange(e.target.value)}/></div>);}
+  const key=(o)=>String(JSON.stringify(o)).toLowerCase();const cur=key(value);
+  return(<TweakRow label={label}><div className="twk-chips" role="radiogroup">{options.map((o,i)=>{const colors=Array.isArray(o)?o:[o];const[hero,...rest]=colors;const on=key(o)===cur;return(<button key={i} type="button" className="twk-chip" role="radio" aria-checked={on} data-on={on?'1':'0'} style={{background:hero}} onClick={()=>onChange(o)}>{on&&<__TwkCheck light={__twkIsLight(hero)}/>}</button>);})}</div></TweakRow>);
+}
+Object.assign(window,{useTweaks,TweaksPanel,TweakSection,TweakRow,TweakToggle,TweakRadio,TweakSelect,TweakColor});
+</script>
+
+<!-- ═══════════════ COMPONENTS ═══════════════ -->
+<script type="text/babel">
+const{useState,useEffect,useRef,useCallback}=React;
+const ICON_PATHS={
+  menu:    '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  bell:    '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  phone:   '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/>',
+  phoneOff:'<path d="M10.7 13.3a16 16 0 0 0 3.4 2.6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.8.7a2 2 0 0 1 1.7 2v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-3.3-2.7m-2.7-3.3a19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9"/><line x1="2" y1="2" x2="22" y2="22"/>',
+  home:    '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  list:    '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/>',
+  clock:   '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>',
+  chart:   '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+  user:    '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  chat:    '<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/>',
+  cal:     '<rect x="3" y="4.5" width="18" height="17" rx="2.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  calCheck:'<rect x="3" y="4.5" width="18" height="17" rx="2.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 15.5 11.2 17.7 15.5 13.5"/>',
+  xcircle: '<circle cx="12" cy="12" r="9.2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+  search:  '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  chevR:   '<polyline points="9 18 15 12 9 6"/>',
+  chevD:   '<polyline points="6 9 12 15 18 9"/>',
+  chevL:   '<polyline points="15 18 9 12 15 6"/>',
+  plus:    '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  mic:     '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>',
+  pin:     '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/>',
+  check:   '<polyline points="20 6 9 17 4 12"/>',
+  x:       '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  refresh: '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.5 9a9 9 0 0 1 14.8-3.4L23 10M1 14l4.7 4.4A9 9 0 0 0 20.5 15"/>',
+};
+function Icon({name,size=22,fill=false,sw=2,style,className}){
+  const common={width:size,height:size,viewBox:'0 0 24 24',fill:fill?'currentColor':'none',stroke:fill?'none':'currentColor',strokeWidth:sw,strokeLinecap:'round',strokeLinejoin:'round',style:{display:'block',flex:'none',...style},className};
+  return React.createElement('svg',{...common,dangerouslySetInnerHTML:{__html:ICON_PATHS[name]||''}});
+}
+const SignalIcons=()=>(
+  <span className="sb-r">
+    <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4.5" width="3" height="7.5" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+    <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 2.5c2.6 0 5 1 6.8 2.7l1.2-1.3C14.4 1.7 11.6.5 8.5.5S2.6 1.7.5 3.9l1.2 1.3C3.5 3.5 5.9 2.5 8.5 2.5Z"/><path d="M8.5 6c1.4 0 2.7.5 3.7 1.5l1.2-1.3C12.2 4.9 10.4 4.2 8.5 4.2s-3.7.7-4.9 2L4.8 7.5C5.8 6.5 7.1 6 8.5 6Z"/><circle cx="8.5" cy="10" r="1.6"/></svg>
+    <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3" stroke="currentColor" strokeWidth="1.2" opacity=".5"/><rect x="3" y="3" width="16" height="7" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="5" rx="1" fill="currentColor" opacity=".5"/></svg>
+  </span>
+);
+const StatusBar=()=>(<div className="statusbar"><span>9:41</span><SignalIcons/></div>);
+
+function Badge({status,children,className=''}){
+  const S=window.Dentia.STATUS;
+  if(status&&S[status])return<span className={`badge b-${S[status].color} ${className}`}>{S[status].label}</span>;
+  return<span className={`badge ${className}`}>{children}</span>;
+}
+function Avatar({user,size=40}){
+  return<span className="av" style={{width:size,height:size,background:user.color,fontSize:size*0.38}}>{user.short}</span>;
+}
+function AppHead({left,title,right,titleLink,onLeft,onRight}){
+  return(
+    <div className="apphead">
+      <button className="ah-btn" onClick={onLeft} style={{visibility:left?'visible':'hidden'}}>
+        {left==='back'||left==='close'?<Icon name="chevL"/>:<Icon name={left||'menu'}/>}
+      </button>
+      <span className="title">{title}</span>
+      {titleLink
+        ?<button className="ah-btn ttl-link" onClick={onRight}>{titleLink}</button>
+        :<button className="ah-btn" onClick={onRight} style={{visibility:right?'visible':'hidden'}}><Icon name={right||'bell'}/></button>}
+    </div>
+  );
+}
+function TabBar({tab,onTab}){
+  const tabs=[
+    {key:'home',label:'ホーム',icon:'home'},
+    {key:'list',label:'一覧',icon:'list'},
+    {key:'next',label:'次の医院',fab:true},
+    {key:'history',label:'履歴',icon:'clock'},
+    {key:'dash',label:'ダッシュ',icon:'chart'},
+  ];
+  return(
+    <nav className="tabbar">
+      {tabs.map(t=>t.fab?(
+        <button key={t.key} className="tab fab" onClick={()=>onTab(t.key)}>
+          <span className="fab-c"><Icon name="phone" fill size={24}/></span>{t.label}
+        </button>
+      ):(
+        <button key={t.key} className={'tab'+(tab===t.key?' on':'')} onClick={()=>onTab(t.key)}>
+          <Icon name={t.icon} size={22}/>{t.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+function Toast({toast}){
+  if(!toast)return null;
+  const U=window.Dentia.USERS;
+  const u=U[toast.who]||U.suzuki;
+  return(
+    <div className="toast" key={toast.id}>
+      <Avatar user={u} size={30}/>
+      <div className="t-body"><b>{u.name}</b><span>{toast.text}</span></div>
+      <span className="t-dot" style={{background:'var(--green)'}}></span>
+    </div>
+  );
+}
+function fmtClock(iso){
+  if(!iso)return'—';
+  const d=new Date(iso);
+  return`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function fmtAgo(iso){
+  if(!iso)return'';
+  const diff=(new Date(window.Dentia.NOW)-new Date(iso))/60000;
+  if(diff<1)return'たった今';
+  if(diff<60)return`${Math.floor(diff)}分前`;
+  if(diff<1440)return`${Math.floor(diff/60)}時間前`;
+  return`${Math.floor(diff/1440)}日前`;
+}
+Object.assign(window,{Icon,SignalIcons,StatusBar,Badge,Avatar,AppHead,TabBar,Toast,fmtClock,fmtAgo});
+</script>
+
+<!-- ═══════════════ SCREENS ═══════════════ -->
+<script type="text/babel">
+function useProgress(clinics){
+  const total=clinics.length;
+  const done=clinics.filter(c=>c.status!=='none').length;
+  const heard=clinics.filter(c=>['heard','appo'].includes(c.status)).length;
+  const appo=clinics.filter(c=>c.status==='appo').length;
+  const rate=done?(heard/done*100):0;
+  return{total,done,heard,appo,rate};
+}
+const FOLLOWUP=['none','noanswer','absent'];
+function nextToCall(clinics){
+  return clinics.find(c=>c.status==='none')||clinics.find(c=>FOLLOWUP.includes(c.status))||clinics[0];
+}
+
+/* ── HOME ── */
+function HomeScreen({store}){
+  const{clinics,presence,nav}=store;
+  const p=useProgress(clinics);
+  const next=nextToCall(clinics);
+  const U=window.Dentia.USERS;
+  const sched=window.Dentia.TODAY_SCHEDULE.map(s=>({...s,clinic:clinics.find(c=>c.id===s.clinicId)})).filter(s=>s.clinic);
+  return(
+    <div className="screen">
+      <StatusBar/>
+      <AppHead left="menu" title="コールキュー" right="bell"/>
+      <div className="pbody">
+        {presence.length>0&&(
+          <div className="presence-row">
+            {presence.slice(0,2).map(pr=>(
+              <span className="pill" key={pr.id}><span className="dot"></span>{U[pr.id]?.name.split(' ')[0]}さんが{pr.activity}</span>
+            ))}
+          </div>
+        )}
+        <div className="sec" style={{paddingTop:presence.length?4:12}}>
+          <div className="pc-top"><span className="lbl">今日の進捗</span><span className="link" onClick={()=>nav('dash')}>詳細を見る</span></div>
+          <div className="pc-num"><b>{p.done}</b><span>/ {p.total} 件</span></div>
+          <div className="bar"><i style={{width:(p.total?p.done/p.total*100:0)+'%'}}></i></div>
+          <div className="stat3">
+            <div className="cell"><div className="k">ヒアリング</div><div className="v">{p.heard}<small>件</small></div></div>
+            <div className="cell"><div className="k">アポ獲得</div><div className="v">{p.appo}<small>件</small></div></div>
+            <div className="cell"><div className="k">ヒアリング率</div><div className="v">{p.rate.toFixed(1)}<small>%</small></div></div>
+          </div>
+        </div>
+        <div className="divider"></div>
+        <div className="sec clinic">
+          <div className="sec-head"><h3>次に電話する医院</h3><span className="link" onClick={()=>nav('list')}>リストを表示</span></div>
+          <div className="row1"><Badge status={next.status}/><span className="ago">{fmtAgo(next.updatedAt)||'未架電'}</span></div>
+          <div className="name" onClick={()=>nav('detail',next.id)}>{next.name}</div>
+          <div className="addr">{next.address}</div>
+          <a className="tel" href={'tel:'+next.tel.replace(/-/g,'')}>
+            <Icon name="phone" size={16} style={{color:'var(--muted)'}}/>{next.tel}
+          </a>
+          {next.lastMemo&&<><div className="memo-lbl">前回メモ</div><div className="memo-tx">{next.lastMemo}</div></>}
+          <a className="btn btn-primary" href={'tel:'+next.tel.replace(/-/g,'')}
+             onClick={()=>setTimeout(()=>nav('incall',next.id),200)}>
+            <Icon name="phone" fill size={22} style={{color:'#fff'}}/>電話する
+          </a>
+        </div>
+        <div className="divider"></div>
+        <div className="sec sched">
+          <div className="sec-head"><h3>次回予定</h3><span className="link" onClick={()=>nav('list')}>すべて見る</span></div>
+          {sched.map((s,i)=>(
+            <div className="item" key={i} onClick={()=>nav('detail',s.clinic.id)}>
+              <span className="time">{s.time}</span>
+              <span className="cl">{s.clinic.name}</span>
+              <Badge status={s.clinic.status}/>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── LIST ── */
+function ListScreen({store}){
+  const{clinics,nav}=store;
+  const S=window.Dentia.STATUS;
+  const[q,setQ]=useState('');
+  const[ward,setWard]=useState('');
+  const[status,setStatus]=useState('');
+  const wards=[...new Set(clinics.map(c=>c.city))];
+  const filtered=clinics.filter(c=>
+    (!q||c.name.includes(q)||c.address.includes(q))&&
+    (!ward||c.city===ward)&&
+    (!status||c.status===status)
+  );
+  return(
+    <div className="screen">
+      <StatusBar/>
+      <AppHead left="menu" title="医院一覧" right="search"/>
+      <div className="pbody list-body">
+        <div className="search-bar">
+          <Icon name="search" size={17} style={{color:'var(--muted2)'}}/>
+          <input value={q} onChange={e=>setQ(e.target.value)} placeholder="医院名・住所で検索"/>
+          {q&&<button className="clr" onClick={()=>setQ('')}><Icon name="x" size={15}/></button>}
+        </div>
+        <div className="chips">
+          <button className={'chip'+(ward===''?' on':'')} onClick={()=>setWard('')}>全エリア</button>
+          {wards.map(w=><button key={w} className={'chip'+(ward===w?' on':'')} onClick={()=>setWard(ward===w?'':w)}>{w}</button>)}
+        </div>
+        <div className="chips">
+          <button className={'chip'+(status===''?' on':'')} onClick={()=>setStatus('')}>すべて</button>
+          {window.Dentia.STATUS_ORDER.map(k=>(
+            <button key={k} className={'chip chip-'+S[k].color+(status===k?' on':'')} onClick={()=>setStatus(status===k?'':k)}>{S[k].label}</button>
+          ))}
+        </div>
+        <div className="list-count">{filtered.length}件</div>
+        <div className="cards">
+          {filtered.map(c=>(
+            <div className={'listcard'+(store.flashId===c.id?' flash':'')} key={c.id} onClick={()=>nav('detail',c.id)}>
+              <div className="r1"><Badge status={c.status}/><span className="ago">{fmtAgo(c.updatedAt)?fmtAgo(c.updatedAt)+'更新':'未架電'}</span></div>
+              <div className="nm">{c.name}</div>
+              <div className="ad">{c.address}</div>
+              <a className="te" href={'tel:'+c.tel.replace(/-/g,'')} onClick={e=>e.stopPropagation()}>
+                <Icon name="phone" size={14} style={{color:'var(--muted)'}}/>{c.tel}
+              </a>
+              <div className="foot">
+                <div className="meta">
+                  {c.nextSchedule&&<span><Icon name="cal" size={14} style={{color:'var(--muted2)'}}/>次回 {c.nextSchedule}</span>}
+                  <span><Icon name="user" size={14} style={{color:'var(--muted2)'}}/>{c.owner?window.Dentia.USERS[c.owner].name:'未割当'}</span>
+                </div>
+                <a className="mini-fab" href={'tel:'+c.tel.replace(/-/g,'')} onClick={e=>e.stopPropagation()}><Icon name="phone" fill size={19} style={{color:'#fff'}}/></a>
+              </div>
+            </div>
+          ))}
+          {filtered.length===0&&<div className="empty">条件に合う医院がありません</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DETAIL ── */
+function DetailScreen({store}){
+  const{clinics,nav,clinicId}=store;
+  const c=clinics.find(x=>x.id===clinicId)||clinics[0];
+  const U=window.Dentia.USERS;
+  const[tab,setTab]=useState('history');
+  return(
+    <div className="screen">
+      <StatusBar/>
+      <AppHead left="back" title="" titleLink="編集" onLeft={()=>nav('list')}/>
+      <div className="pbody np">
+        <div className="p3-top">
+          <div className="name">{c.name}</div>
+          <a className="call-fab" href={'tel:'+c.tel.replace(/-/g,'')} onClick={()=>setTimeout(()=>nav('incall',c.id),200)}>
+            <Icon name="phone" fill size={24} style={{color:'#fff'}}/>
+          </a>
+        </div>
+        <a className="tel" href={'tel:'+c.tel.replace(/-/g,'')}><Icon name="phone" size={16} style={{color:'var(--muted)'}}/>{c.tel}</a>
+        <div className="badges">
+          <Badge status={c.status}/>
+          {c.updatedAt&&<span className="badge b-gray">{fmtAgo(c.updatedAt)}更新</span>}
+        </div>
+        <div className="tabs">
+          <div className={'t'+(tab==='history'?' on':'')} onClick={()=>setTab('history')}>履歴</div>
+          <div className={'t'+(tab==='info'?' on':'')} onClick={()=>setTab('info')}>基本情報</div>
+        </div>
+        {tab==='history'?(
+          <div className="timeline">
+            {c.history.length===0&&<div className="empty" style={{paddingTop:30}}>まだ架電履歴がありません</div>}
+            {c.history.map((h,i)=>(
+              <div className="tl" key={i}>
+                <div className="rail"><div className={'ring r-'+window.Dentia.STATUS[h.status].color}></div>{i<c.history.length-1&&<div className="stem"></div>}</div>
+                <div className="body">
+                  <div className="meta">
+                    <span className="dt">{fmtClock(h.at)}</span>
+                    <span className="who">{U[h.who]?.name||''}</span>
+                    <Badge status={h.status}/>
+                  </div>
+                  <div className="note">{h.note||'—'}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ):(
+          <div className="info">
+            <div className="info-row"><span className="ik">電話番号</span><a className="iv link" href={'tel:'+c.tel.replace(/-/g,'')}>{c.tel}</a></div>
+            <div className="info-row"><span className="ik">住所</span><span className="iv">{c.address}</span></div>
+            <div className="info-row"><span className="ik">診療時間</span><span className="iv">{c.hours}</span></div>
+            <div className="info-row"><span className="ik">担当者</span><span className="iv">{c.owner?U[c.owner].name:'未割当'}</span></div>
+            <div className="info-row"><span className="ik">エリア</span><span className="iv">{c.prefecture} {c.city}</span></div>
+            <div className="map"><Icon name="pin" size={20} style={{color:'var(--teal)'}}/><span>地図で開く</span></div>
+          </div>
+        )}
+        <div className="p3foot">
+          <button className="btn btn-outline" onClick={()=>nav('result',c.id)}>
+            <Icon name="plus" size={18}/>架電結果を追加
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── RESULT INPUT ── */
+const STATUS_ICON={
+  none:    {icon:'phone',   line:true},
+  noanswer:{icon:'phoneOff',line:true},
+  absent:  {icon:'user',    line:false,str:true},
+  heard:   {icon:'chat',    line:false},
+  appo:    {icon:'calCheck',line:false,str:true},
+  reject:  {icon:'xcircle', line:false,str:true},
+};
+function ResultScreen({store}){
+  const{clinics,nav,clinicId,applyUpdate}=store;
+  const c=clinics.find(x=>x.id===clinicId)||clinics[0];
+  const S=window.Dentia.STATUS;
+  const[sel,setSel]=useState(c.status==='none'?null:c.status);
+  const[memo,setMemo]=useState(store.inCallMemo||'');
+  const[saved,setSaved]=useState(false);
+
+  useEffect(()=>{
+    if(store.inCallMemo){store.setInCallMemo('');}
+  },[]);
+
+  const save=()=>{
+    if(!sel)return;
+    applyUpdate({id:'u'+Date.now(),clinicId:c.id,status:sel,note:memo,who:'me',at:new Date().toISOString(),text:`${c.name}を「${S[sel].label}」に更新`});
+    setSaved(true);
+    setTimeout(()=>nav('detail',c.id),850);
+  };
+  return(
+    <div className="screen">
+      <StatusBar/>
+      <AppHead left="close" title="架電結果を入力" onLeft={()=>nav('detail',c.id)}/>
+      <div className="pbody np">
+        <div className="p2-name">{c.name}</div>
+        <a className="p2-tel" href={'tel:'+c.tel.replace(/-/g,'')}>{c.tel}</a>
+        <div className="fld-lbl">結果（ステータス）</div>
+        <div className="stgrid">
+          {window.Dentia.STATUS_ORDER.map(k=>{
+            const cfg=STATUS_ICON[k];const on=sel===k;
+            return(
+              <button key={k} className={`stbtn s-${S[k].color}`+(on?' on':'')} onClick={()=>setSel(k)}>
+                {cfg.line?<Icon name={cfg.icon} size={30} sw={1.8} className="line-ic"/>:<span className="circ"><Icon name={cfg.icon} size={24} fill={!cfg.str} sw={2.2} style={{color:'#fff'}}/></span>}
+                {S[k].label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="fld-lbl">メモ（任意）</div>
+        <div className="ta-wrap">
+          <textarea value={memo} maxLength={200} onChange={e=>setMemo(e.target.value)} placeholder="聞き出した悩みや、次回約束などを入力"></textarea>
+          <div className="ta-count">{memo.length}/200</div>
+        </div>
+        <button className="btn btn-outline voice" onClick={()=>setMemo(m=>(m?m+' ':'')+'（音声入力：次回は木曜午後に再連絡）')}>
+          <Icon name="mic" size={18}/>音声入力
+        </button>
+        <div className="p2foot">
+          <button className={'btn btn-primary'+(!sel?' disabled':'')+(saved?' ok':'')} onClick={save} disabled={!sel}>
+            {saved?<><Icon name="check" size={22} style={{color:'#fff'}}/>保存しました</>:'保存して次へ'}
+          </button>
+          <div className="cap">{sel?'Enterで保存':'ステータスを選択してください'}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── IN-CALL MEMO ── */
+function InCallScreen({store}){
+  const{clinics,nav,clinicId}=store;
+  const c=clinics.find(x=>x.id===clinicId)||clinics[0];
+  const[memo,setMemo]=useState('');
+  const[elapsed,setElapsed]=useState(0);
+
+  useEffect(()=>{
+    const t=setInterval(()=>setElapsed(e=>e+1),1000);
+    return()=>clearInterval(t);
+  },[]);
+
+  const fmtSec=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+
+  const endCall=()=>{
+    store.setInCallMemo(memo);
+    nav('result',c.id);
+  };
+
+  return(
+    <div className="screen incall-screen">
+      <StatusBar/>
+      <AppHead left="close" title="通話中" onLeft={()=>nav('detail',c.id)}/>
+      <div className="pbody" style={{alignItems:'stretch'}}>
+        <div className="incall-hero">
+          <div className="call-pulse-ring">
+            <div className="call-pulse-fab">
+              <Icon name="phone" fill size={34} style={{color:'#fff'}}/>
+            </div>
+          </div>
+          <div className="incall-name">{c.name}</div>
+          <div className="incall-tel">{c.tel}</div>
+          <div className="incall-timer">{fmtSec(elapsed)}</div>
+        </div>
+
+        <div style={{marginTop:4}}>
+          <div className="fld-lbl" style={{marginTop:0}}>通話メモ</div>
+          <div className="ta-wrap">
+            <textarea
+              value={memo}
+              maxLength={200}
+              onChange={e=>setMemo(e.target.value)}
+              placeholder="ヒアリング内容・悩み・次回の約束などをリアルタイムでメモ…"
+              style={{minHeight:140}}
+              autoFocus
+            />
+            <div className="ta-count">{memo.length}/200</div>
+          </div>
+          <div className="memo-hint">通話終了後、そのままステータス入力へ進めます</div>
+        </div>
+      </div>
+
+      <div className="incall-foot">
+        <button className="btn btn-primary btn-danger" onClick={endCall}>
+          <Icon name="phoneOff" size={22} style={{color:'#fff'}}/>通話終了・結果を入力
+        </button>
+        <button className="btn btn-outline" style={{marginTop:10}} onClick={()=>nav('detail',c.id)}>
+          後で入力
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── HISTORY ── */
+function HistoryScreen({store}){
+  const{clinics,nav}=store;
+  const U=window.Dentia.USERS;
+  const feed=[];
+  clinics.forEach(c=>c.history.forEach(h=>feed.push({...h,clinic:c})));
+  feed.sort((a,b)=>new Date(b.at)-new Date(a.at));
+  return(
+    <div className="screen">
+      <StatusBar/>
+      <AppHead left="menu" title="架電履歴" right="refresh"/>
+      <div className="pbody list-body">
+        <div className="feed">
+          {feed.map((h,i)=>(
+            <div className="feed-item" key={i} onClick={()=>nav('detail',h.clinic.id)}>
+              <Avatar user={U[h.who]||U.me} size={36}/>
+              <div className="fi-body">
+                <div className="fi-top"><b>{h.clinic.name}</b><span className="fi-time">{fmtClock(h.at)}</span></div>
+                <div className="fi-meta"><Badge status={h.status}/><span className="fi-who">{U[h.who]?.name}</span></div>
+                {h.note&&<div className="fi-note">{h.note}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── DASHBOARD ── */
+function DashScreen({store}){
+  const{clinics,nav}=store;
+  const S=window.Dentia.STATUS;
+  const p=useProgress(clinics);
+  const counts={};
+  window.Dentia.STATUS_ORDER.forEach(k=>counts[k]=clinics.filter(c=>c.status===k).length);
+  const appoRate=p.done?(p.appo/p.done*100):0;
+  return(
+    <div className="screen">
+      <StatusBar/>
+      <AppHead left="menu" title="進捗ダッシュボード" right="refresh"/>
+      <div className="pbody list-body">
+        <div className="dash-card">
+          <div className="dash-head"><h4>今週の進捗 (6/1〜6/7)</h4></div>
+          <div className="dash3">
+            <div className="c"><div className="k">架電数</div><div className="v">{p.done}<small>件</small></div></div>
+            <div className="c"><div className="k">ヒアリング</div><div className="v">{p.heard}<small>件</small></div></div>
+            <div className="c"><div className="k">アポ獲得</div><div className="v">{p.appo}<small>件</small></div></div>
+          </div>
+          <div className="dash-bar"></div>
+          <div className="dash2">
+            <div className="c"><div className="k">ヒアリング率</div><div className="v">{p.rate.toFixed(1)}<small>%</small></div></div>
+            <div className="c"><div className="k">アポ率</div><div className="v">{appoRate.toFixed(1)}<small>%</small></div></div>
+          </div>
+        </div>
+        <div className="cc-block">
+          <h2>ステータス別サマリー</h2>
+          {window.Dentia.STATUS_ORDER.map(k=>(
+            <div className="sumrow" key={k} onClick={()=>nav('list')}>
+              <span className="sdot" style={{background:`var(--${S[k].color})`}}></span>
+              <span className="slabel">{S[k].label}</span>
+              <span className="scount">{counts[k]}<small>件</small></span>
+              <Icon name="chevR" size={16} sw={2.4} style={{color:'var(--muted2)'}}/>
+            </div>
+          ))}
+        </div>
+        <div className="cc-block">
+          <h2>架電数の内訳（バー）</h2>
+          <div className="hbars">
+            {window.Dentia.STATUS_ORDER.map(k=>{
+              const max=Math.max(...Object.values(counts),1);
+              return(
+                <div className="hbar" key={k}>
+                  <span className="hb-label">{S[k].label}</span>
+                  <div className="hb-track"><i style={{width:(counts[k]/max*100)+'%',background:`var(--${S[k].color})`}}></i></div>
+                  <span className="hb-num">{counts[k]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Object.assign(window,{HomeScreen,ListScreen,DetailScreen,ResultScreen,InCallScreen,HistoryScreen,DashScreen,nextToCall});
+</script>
+
+<!-- ═══════════════ APP SHELL ═══════════════ -->
+<script type="text/babel">
+const TWEAK_DEFAULTS=/*EDITMODE-BEGIN*/{
+  "accent":"#0c8c8b",
+  "font":"Noto Sans JP",
+  "density":"regular",
+  "dark":false,
+  "bots":true
+}/*EDITMODE-END*/;
+
+const SCREEN_TAB={home:'home',list:'list',detail:'list',result:'list',incall:'list',history:'history',dash:'dash'};
+
+function applyUpdateToClinics(clinics,u){
+  return clinics.map(c=>{
+    if(c.id!==u.clinicId)return c;
+    return{...c,status:u.status,owner:u.who,lastMemo:u.note||c.lastMemo,updatedAt:u.at,
+           history:[{at:u.at,who:u.who,status:u.status,note:u.note||''},...c.history]};
+  });
+}
+
+function App(){
+  const[t,setTweak]=useTweaks(TWEAK_DEFAULTS);
+  const[clinics,setClinics]=useState(()=>window.Dentia.CLINICS.map(c=>({...c,history:[...c.history]})));
+  const[presence,setPresence]=useState([]);
+  const[toast,setToast]=useState(null);
+  const[flashId,setFlashId]=useState(null);
+  const[view,setView]=useState({screen:'home',clinicId:null});
+  const[inCallMemo,setInCallMemo]=useState('');
+
+  const clinicsRef=useRef(clinics);clinicsRef.current=clinics;
+  const rtRef=useRef(null);
+  const toastTimer=useRef(null);
+  const flashTimer=useRef(null);
+
+  const showToast=useCallback((who,text)=>{
+    setToast({id:Date.now()+Math.random(),who,text});
+    clearTimeout(toastTimer.current);
+    toastTimer.current=setTimeout(()=>setToast(null),3600);
+  },[]);
+
+  const flash=useCallback((clinicId)=>{
+    setFlashId(clinicId);
+    clearTimeout(flashTimer.current);
+    flashTimer.current=setTimeout(()=>setFlashId(null),1400);
+  },[]);
+
+  const onRemote=useCallback((u)=>{
+    setClinics(cs=>applyUpdateToClinics(cs,u));
+    if(u.who!=='me'){showToast(u.who,u.text);flash(u.clinicId);}
+  },[showToast,flash]);
+
+  const onPresence=useCallback((list)=>{setPresence(list.filter(p=>p.id!=='me'));},[]);
+
+  const applyUpdate=useCallback((u)=>{
+    setClinics(cs=>applyUpdateToClinics(cs,u));
+    if(rtRef.current)rtRef.current.broadcast(u);
+  },[]);
+
+  useEffect(()=>{
+    const rt=window.Dentia.makeRealtime({onRemote:(u)=>onRemote(u),onPresence:(list)=>onPresence(list),getClinics:()=>clinicsRef.current});
+    rtRef.current=rt;
+    return()=>rt.stop();
+  },[onRemote,onPresence]);
+
+  useEffect(()=>{
+    const rt=rtRef.current;if(!rt)return;
+    if(t.bots)rt.startBots();else{rt.stop();setPresence([]);}
+  },[t.bots]);
+
+  const nav=useCallback((screen,clinicId=null)=>{
+    if(screen==='next'){
+      const nx=window.nextToCall(clinicsRef.current);
+      setView({screen:'incall',clinicId:nx.id});
+    }else{
+      setView({screen,clinicId});
+    }
+    document.querySelector('.screen-scroll')?.scrollTo(0,0);
+  },[]);
+
+  const store={clinics,presence,nav,applyUpdate,flashId,clinicId:view.clinicId,me:'me',inCallMemo,setInCallMemo};
+
+  const Screen={
+    home:HomeScreen,list:ListScreen,detail:DetailScreen,
+    result:ResultScreen,incall:InCallScreen,history:HistoryScreen,dash:DashScreen,
+  }[view.screen]||HomeScreen;
+
+  const densityClass='dens-'+t.density;
+
+  return(
+    <div className={'app-root '+densityClass+(t.dark?' dark':'')}
+         style={{'--teal':t.accent,'--teal-d':t.accent,fontFamily:`'${t.font}', sans-serif`}}>
+      <div className="device">
+        <div className="device-screen">
+          <div className="screen-scroll">
+            <Screen store={store}/>
+          </div>
+          <Toast toast={toast}/>
+          <TabBar tab={SCREEN_TAB[view.screen]} onTab={nav}/>
+        </div>
+      </div>
+
+      <TweaksPanel>
+        <TweakSection label="ブランド"/>
+        <TweakColor label="アクセント" value={t.accent}
+                    options={['#0c8c8b','#6ab3e0','#8aa9e6','#b596de','#ec9bc1']}
+                    onChange={v=>setTweak('accent',v)}/>
+        <TweakSelect label="フォント" value={t.font}
+                     options={['Noto Sans JP','Zen Kaku Gothic New','Zen Maru Gothic','M PLUS Rounded 1c']}
+                     onChange={v=>setTweak('font',v)}/>
+        <TweakSection label="レイアウト"/>
+        <TweakRadio label="情報密度" value={t.density}
+                    options={['compact','regular','comfy']}
+                    onChange={v=>setTweak('density',v)}/>
+        <TweakToggle label="ダークモード" value={t.dark} onChange={v=>setTweak('dark',v)}/>
+        <TweakSection label="リアルタイム共有"/>
+        <TweakToggle label="同僚の自動更新を流す" value={t.bots} onChange={v=>setTweak('bots',v)}/>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+<script>
+function fitDevice(){
+  const d=document.querySelector('.device');if(!d)return;
+  const s=Math.min((window.innerWidth-24)/390,(window.innerHeight-24)/844,1);
+  d.style.transform='scale('+s+')';
+}
+window.addEventListener('resize',fitDevice);
+const obs=new MutationObserver(fitDevice);
+obs.observe(document.getElementById('root'),{childList:true,subtree:true});
+setTimeout(fitDevice,300);setTimeout(fitDevice,900);
+</script>
+</body>
+</html>
