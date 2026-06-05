@@ -19,24 +19,25 @@ export function GroupToggle({
   onChange: (next: GroupBy) => void;
 }) {
   return (
-    <div className="flex items-center gap-1 text-xs text-slate-500">
-      <span className="mr-1">グループ:</span>
-      <div className="inline-flex rounded-lg bg-slate-100 p-0.5">
-        {OPTIONS.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            onClick={() => onChange(o.value)}
-            className={`rounded-md px-2.5 py-1 font-medium transition ${
-              value === o.value
-                ? "bg-white text-emerald-700 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
+    <div
+      style={{
+        display: "flex",
+        gap: 6,
+        overflowX: "auto",
+        paddingRight: 2,
+      }}
+    >
+      {OPTIONS.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={"chip" + (value === o.value ? " on" : "")}
+          style={{ padding: "5px 11px", fontSize: 12 }}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }

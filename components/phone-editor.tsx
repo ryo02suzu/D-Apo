@@ -63,22 +63,34 @@ export function PhoneEditor({
 
   if (editing) {
     return (
-      <div className="space-y-2">
+      <div>
         <input
           type="tel"
           inputMode="tel"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder="03-1234-5678"
-          className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
+          className="field"
         />
-        {error && <p className="text-xs text-rose-600">{error}</p>}
-        <div className="flex gap-2">
+        {error && (
+          <p
+            style={{
+              marginTop: 8,
+              fontSize: 13,
+              fontWeight: 600,
+              color: "var(--red-fg)",
+            }}
+          >
+            {error}
+          </p>
+        )}
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
           <button
             type="button"
             onClick={save}
             disabled={pending}
-            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"
+            className={"btn btn-primary btn-sm" + (pending ? " disabled" : "")}
+            style={{ width: "auto", flex: 1 }}
           >
             保存
           </button>
@@ -88,7 +100,8 @@ export function PhoneEditor({
               setValue(phone ?? "");
               setEditing(false);
             }}
-            className="rounded-lg px-3 py-2 text-sm text-slate-500"
+            className="btn btn-outline btn-sm"
+            style={{ width: "auto", flex: 1 }}
           >
             キャンセル
           </button>
@@ -98,33 +111,43 @@ export function PhoneEditor({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
       {phone ? (
-        <a href={`tel:${tel}`} className="text-lg font-bold text-emerald-700 underline">
+        <a
+          href={`tel:${tel}`}
+          className="tel"
+          style={{ marginTop: 0, color: "var(--teal)", fontSize: 16 }}
+        >
           {phone}
         </a>
       ) : (
-        <span className="text-sm text-slate-400">電話番号 未登録</span>
+        <span style={{ fontSize: 14, color: "var(--muted2)" }}>
+          電話番号 未登録
+        </span>
       )}
 
       {unverified && (
-        <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+        <span className="badge b-amber">
           未確認{phoneSource === "places" ? "（自動取得）" : ""}
         </span>
       )}
-      {phone && phoneVerified && (
-        <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-          確認済
-        </span>
-      )}
+      {phone && phoneVerified && <span className="badge b-green">確認済</span>}
 
-      <div className="ml-auto flex gap-2">
+      <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
         {unverified && (
           <button
             type="button"
             onClick={markVerified}
             disabled={pending}
-            className="rounded-lg border border-emerald-300 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+            className="chip"
+            style={{ padding: "6px 11px", fontSize: 12 }}
           >
             確認済みにする
           </button>
@@ -132,7 +155,8 @@ export function PhoneEditor({
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="rounded-lg px-2.5 py-1 text-xs font-medium text-slate-500 hover:bg-slate-100"
+          className="chip"
+          style={{ padding: "6px 11px", fontSize: 12 }}
         >
           {phone ? "編集" : "番号を追加"}
         </button>

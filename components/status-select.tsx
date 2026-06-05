@@ -1,11 +1,13 @@
 // components/status-select.tsx
 // 設計書 §3 Phase 3: ステータス変更（楽観的更新）。
 // 詳細画面でクリック→即 UI 反映→clinics.status を更新。
+// Dentia.html の .stgrid/.stbtn/.s-* グリッドで表示。
 "use client";
 
 import { useState, useTransition } from "react";
+import { Icon } from "@/components/icon";
 import { createClient } from "@/lib/supabase/client";
-import { STATUS_BADGE_CLASS, STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
+import { STATUS_OPTIONS } from "@/lib/status";
 import type { ClinicStatus } from "@/lib/types";
 
 export function StatusSelect({
@@ -39,27 +41,52 @@ export function StatusSelect({
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2">
-        {STATUS_ORDER.map((s) => {
-          const active = s === status;
+      <div className="stgrid">
+        {STATUS_OPTIONS.map((o) => {
+          const active = o.value === status;
           return (
             <button
-              key={s}
+              key={o.value}
               type="button"
-              onClick={() => change(s)}
+              onClick={() => change(o.value)}
               aria-pressed={active}
-              className={`rounded-xl px-2 py-3 text-sm font-medium transition ${
-                active
-                  ? `${STATUS_BADGE_CLASS[s]} ring-2 ring-emerald-400`
-                  : "bg-slate-50 text-slate-500 hover:bg-slate-100"
-              }`}
+              className={`stbtn s-${o.color}` + (active ? " on" : "")}
             >
-              {STATUS_LABEL[s]}
+              {o.line ? (
+                <Icon
+                  name={o.icon}
+                  size={30}
+                  sw={1.8}
+                  className="line-ic"
+                />
+              ) : (
+                <span className="circ">
+                  <Icon
+                    name={o.icon}
+                    size={24}
+                    fill={o.fill}
+                    sw={2.2}
+                    style={{ color: "#fff" }}
+                  />
+                </span>
+              )}
+              {o.label}
             </button>
           );
         })}
       </div>
-      {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
+      {error && (
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--red-fg)",
+          }}
+        >
+          {error}
+        </p>
+      )}
     </div>
   );
 }

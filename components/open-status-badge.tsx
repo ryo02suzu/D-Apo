@@ -6,7 +6,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { CALL_STATUS_CLASS, CALL_STATUS_LABEL, callStatusNow } from "@/lib/hours";
+import { CALL_STATUS_LABEL, callStatusNow } from "@/lib/hours";
 import type { CallStatus, WeeklyHours } from "@/lib/types";
 
 // 1分ごとに再評価するための外部ストア購読
@@ -14,6 +14,15 @@ function subscribe(onChange: () => void) {
   const id = setInterval(onChange, 60_000);
   return () => clearInterval(id);
 }
+
+// CallStatus → デザインモック（Dentia.html）のバッジ配色キー
+const CALL_STATUS_COLOR: Record<CallStatus, string> = {
+  open: "green",
+  lunch: "amber",
+  closed_today: "gray",
+  off: "red",
+  unknown: "gray",
+};
 
 export function OpenStatusBadge({ hours }: { hours: WeeklyHours }) {
   const status = useSyncExternalStore<CallStatus>(
@@ -25,9 +34,7 @@ export function OpenStatusBadge({ hours }: { hours: WeeklyHours }) {
   if (status === "unknown") return null;
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${CALL_STATUS_CLASS[status]}`}
-    >
+    <span className={`badge b-${CALL_STATUS_COLOR[status]}`}>
       {CALL_STATUS_LABEL[status]}
     </span>
   );

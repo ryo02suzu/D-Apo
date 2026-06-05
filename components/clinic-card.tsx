@@ -1,8 +1,9 @@
 // components/clinic-card.tsx
-// 設計書 §3: 1医院のカード。名前・ステータスバッジ・診療時間・
-// 営業時間バッジ・次回予定・ワンタップ発信。
+// 設計書 §3: 1医院のカード（Dentia.html の .listcard）。
+// 名前・ステータスバッジ・住所・電話・次回予定・営業時間バッジ・発信FAB。
 import Link from "next/link";
 import { CallButton } from "@/components/call-button";
+import { Icon } from "@/components/icon";
 import { OpenStatusBadge } from "@/components/open-status-badge";
 import { StatusBadge } from "@/components/status-badge";
 import type { Clinic } from "@/lib/types";
@@ -20,57 +21,73 @@ function formatNextAction(iso: string | null): string | null {
 
 export function ClinicCard({ clinic }: { clinic: Clinic }) {
   const next = formatNextAction(clinic.next_action_at);
+  const tel = clinic.phone ? clinic.phone.replace(/[^\d+]/g, "") : "";
 
   return (
-    <Link
-      href={`/clinics/${clinic.id}`}
-      className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-emerald-300 hover:shadow"
-    >
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
+    <Link href={`/clinics/${clinic.id}`} className="listcard">
+      <div className="r1">
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <StatusBadge status={clinic.status} />
           <OpenStatusBadge hours={clinic.hours} />
         </div>
-
-        <h3 className="mt-1.5 truncate text-base font-bold text-slate-900">
-          {clinic.name}
-        </h3>
-
-        {clinic.address && (
-          <p className="mt-0.5 truncate text-sm text-slate-500">
-            {clinic.prefecture}
-            {clinic.city}
-            {clinic.address}
-          </p>
+        {clinic.phone && !clinic.phone_verified && (
+          <span className="ago" style={{ color: "var(--amber-fg)" }}>
+            未確認
+          </span>
         )}
-
-        {clinic.business_hours && (
-          <p className="mt-1 truncate text-xs text-slate-400">
-            🕒 {clinic.business_hours}
-          </p>
-        )}
-
-        {next && (
-          <p className="mt-1 text-xs font-medium text-emerald-700">
-            次回予定: {next}
-          </p>
-        )}
-
-        {clinic.latest_memo && (
-          <p className="mt-1 line-clamp-1 text-xs text-slate-500">
-            💬 {clinic.latest_memo}
-          </p>
-        )}
+        {!clinic.phone && <span className="ago">番号なし</span>}
       </div>
 
-      <div className="flex shrink-0 flex-col items-center gap-1 self-center">
+      <div className="nm">{clinic.name}</div>
+
+      {clinic.address && (
+        <div className="ad">
+          {clinic.prefecture}
+          {clinic.city}
+          {clinic.address}
+        </div>
+      )}
+
+      {clinic.phone && (
+        <a
+          className="te"
+          href={`tel:${tel}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <Icon name="phone" size={14} style={{ color: "var(--muted)" }} />
+          {clinic.phone}
+        </a>
+      )}
+
+      <div className="foot">
+        <div className="meta">
+          {next && (
+            <span>
+              <Icon name="cal" size={14} style={{ color: "var(--muted2)" }} />
+              次回 {next}
+            </span>
+          )}
+          {clinic.business_hours && (
+            <span>
+              <Icon name="clock" size={14} style={{ color: "var(--muted2)" }} />
+              {clinic.business_hours}
+            </span>
+          )}
+          {clinic.latest_memo && (
+            <span
+              style={{
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "100%",
+              }}
+            >
+              <Icon name="chat" size={14} style={{ color: "var(--muted2)" }} />
+              {clinic.latest_memo}
+            </span>
+          )}
+        </div>
         <CallButton phone={clinic.phone} compact />
-        {clinic.phone && !clinic.phone_verified && (
-          <span className="text-[10px] font-medium text-amber-600">未確認</span>
-        )}
-        {!clinic.phone && (
-          <span className="text-[10px] text-slate-400">番号なし</span>
-        )}
       </div>
     </Link>
   );
