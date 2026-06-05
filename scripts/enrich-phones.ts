@@ -16,6 +16,10 @@
  *
  * 使い方（APIキー無しで照合ロジックを検証）:
  *   pnpm enrich:phones --mock scripts/__fixtures__/places.sample.json --dry-run
+ *
+ * 使い方（API 0回で対象件数＝想定API回数だけ見積もる）:
+ *   NEXT_PUBLIC_SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
+ *     pnpm enrich:phones --estimate --prefecture 東京都 --city 新宿区
  */
 import { readFileSync } from "node:fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -32,6 +36,7 @@ const filterPref = getArg("prefecture");
 const filterCity = getArg("city");
 const limit = getArg("limit") ? Number(getArg("limit")) : 50;
 const dryRun = hasFlag("dry-run");
+const estimate = hasFlag("estimate");
 const mockPath = getArg("mock");
 const maxCandidates = getArg("max-candidates") ? Number(getArg("max-candidates")) : 5;
 
@@ -120,6 +125,52 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  // --estimate: APIを一切呼ばず、対象件数（＝本実行で叩くAPI回数の目安）だけ出す
+  if (estimate) {
+    if (!url || !serviceKey) {
+      console.error(
+        "❌ --estimate には NEXT_PUBLIC_SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY が必要です。",
+      );
+      process.exit(1);
+    }
+    const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
+
+    let q = sb
+      .from("clinics")
+      .select("*", { count: "exact", head: true })
+      .is("phone", null)
+      .eq("phone_verified", false);
+    if (filterPref) q = q.eq("prefecture", filterPref);
+    if (filterCity) q = q.eq("city", filterCity);
+    const { count, error } = await q;
+    if (error) {
+      console.error("❌ 件数取得に失敗:", error.message);
+      process.exit(1);
+    }
+
+    // 座標ありの件数（強い照合が効く＝自動採用されやすい）
+    let qc = sb
+      .from("clinics")
+      .select("*", { count: "exact", head: true })
+      .is("phone", null)
+      .eq("phone_verified", false)
+      .not("lat", "is", null);
+    if (filterPref) qc = qc.eq("prefecture", filterPref);
+    if (filterCity) qc = qc.eq("city", filterCity);
+    const { count: withCoords } = await qc;
+
+    const total = count ?? 0;
+    const effective = Math.min(total, limit);
+    const scope =
+      [filterPref, filterCity].filter(Boolean).join(" ") || "全件";
+    console.log(`📊 見積もり（${scope}）— API呼び出しなし`);
+    console.log(`  電話未取得の対象: ${total}件`);
+    console.log(`  うち座標あり（照合が効く）: ${withCoords ?? 0}件`);
+    console.log(`  今回の --limit ${limit} 適用後に叩くAPI回数: 約 ${effective}回`);
+    console.log(`  ※ 1医院 = Text Search 1回。候補の電話番号は同じ応答に含まれます。`);
+    return;
+  }
 
   const mock = mockPath ? loadMock(mockPath) : null;
 
