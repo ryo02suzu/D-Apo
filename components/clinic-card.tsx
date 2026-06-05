@@ -63,8 +63,14 @@ export function ClinicCard({ clinic }: { clinic: Clinic }) {
         )}
       </div>
 
-      <div className="shrink-0 self-center">
+      <div className="flex shrink-0 flex-col items-center gap-1 self-center">
         <CallButton phone={clinic.phone} compact />
+        {clinic.phone && !clinic.phone_verified && (
+          <span className="text-[10px] font-medium text-amber-600">未確認</span>
+        )}
+        {!clinic.phone && (
+          <span className="text-[10px] text-slate-400">番号なし</span>
+        )}
       </div>
     </Link>
   );

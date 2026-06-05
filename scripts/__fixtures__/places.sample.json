@@ -1,0 +1,29 @@
+{
+  "_comment": "enrich:phones の照合ロジックを APIキー無しで検証するためのサンプル。形式: { '<external_id or name>': { clinic, candidates } }",
+  "正解マッチ_さくら歯科": {
+    "clinic": { "name": "さくら歯科医院", "lat": 35.69, "lng": 139.7 },
+    "candidates": [
+      { "place_id": "p1", "name": "さくら歯科医院", "phone": "03-1234-5678", "lat": 35.6901, "lng": 139.7001, "formatted_address": "東京都新宿区西新宿1-2-3" },
+      { "place_id": "p2", "name": "西新宿内科クリニック", "phone": "03-9999-0000", "lat": 35.6905, "lng": 139.701 }
+    ]
+  },
+  "別名やや違い_みなみ歯科": {
+    "clinic": { "name": "みなみ歯科クリニック", "lat": 35.66, "lng": 139.7 },
+    "candidates": [
+      { "place_id": "q1", "name": "みなみ歯科クリニック", "phone": "03-2222-1111", "lat": 35.6603, "lng": 139.7004 },
+      { "place_id": "q2", "name": "みなみ歯科", "phone": "03-2222-9999", "lat": 35.6601, "lng": 139.7002 }
+    ]
+  },
+  "同名だが遠い別物_ひかり歯科": {
+    "clinic": { "name": "ひかり歯科", "lat": 35.7, "lng": 139.77 },
+    "candidates": [
+      { "place_id": "r1", "name": "ひかり歯科", "phone": "06-1111-2222", "lat": 34.7, "lng": 135.5, "formatted_address": "大阪府..." }
+    ]
+  },
+  "候補に電話なし_こもれび歯科": {
+    "clinic": { "name": "こもれび歯科", "lat": 35.77, "lng": 139.8 },
+    "candidates": [
+      { "place_id": "s1", "name": "こもれび歯科", "lat": 35.7701, "lng": 139.8001 }
+    ]
+  }
+}

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "import:clinics": "tsx scripts/import-clinics.ts"
+    "import:clinics": "tsx scripts/import-clinics.ts",
+    "enrich:phones": "tsx scripts/enrich-phones.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

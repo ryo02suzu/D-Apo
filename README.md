@@ -58,6 +58,19 @@ pnpm import:clinics --facility 施設票.csv --hours 診療時間票.csv --prefe
 
 詳しい手順は [`docs/データ取り込み.md`](./docs/データ取り込み.md) を参照。
 
+### 5. 電話番号の補完（任意）
+
+厚労省データに電話番号は無いため、Google Places から補完できます。誤マッチ防止のため
+**座標照合で信頼度を出し、高信頼のみ自動採用・曖昧は確認キュー**に回します。
+
+```bash
+# APIキー無しで照合ロジックを試す
+pnpm enrich:phones --mock scripts/__fixtures__/places.sample.json --dry-run
+```
+
+確認キューはアプリの `/clinics/review`（下タブ「番号確認」）でさばきます。
+詳しくは [`docs/電話番号の補完.md`](./docs/電話番号の補完.md) を参照。
+
 ## 画面構成
 
 - `/login` … ログイン

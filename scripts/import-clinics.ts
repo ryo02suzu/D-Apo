@@ -243,8 +243,16 @@ type ClinicInsert = {
   city: string | null;
   business_hours: string | null;
   hours: WeeklyHours;
+  lat: number | null;
+  lng: number | null;
   source: string;
 };
+
+/** "43.29" → 43.29。空・不正は null */
+function parseCoord(raw: string | undefined): number | null {
+  const n = Number((raw ?? "").trim());
+  return Number.isFinite(n) && n !== 0 ? n : null;
+}
 
 // ---------------------------------------------------------------------
 // メイン
@@ -265,6 +273,8 @@ async function main() {
   const idIdx = fc("ID");
   const nameIdx = fc("正式名称");
   const addrIdx = fc("所在地");
+  const latIdx = fc("所在地座標（緯度）");
+  const lngIdx = fc("所在地座標（経度）");
 
   const records: ClinicInsert[] = [];
   let skippedRegion = 0;
@@ -299,6 +309,8 @@ async function main() {
       city,
       business_hours: toBusinessHoursText(hours),
       hours,
+      lat: parseCoord(row[latIdx]),
+      lng: parseCoord(row[lngIdx]),
       source,
     });
     if (records.length >= limit) break;

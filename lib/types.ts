@@ -46,8 +46,28 @@ export type Clinic = {
   latest_memo: string | null;
   source: string | null;
   external_id: string | null;
+  lat: number | null;
+  lng: number | null;
+  place_id: string | null;
+  phone_source: string | null;
+  phone_verified: boolean;
   created_at: string;
   updated_at: string;
+};
+
+/** 電話番号補完の確認キュー（Places候補） */
+export type PhoneCandidate = {
+  id: string;
+  clinic_id: string;
+  place_id: string | null;
+  name: string | null;
+  formatted_address: string | null;
+  phone: string | null;
+  distance_m: number | null;
+  name_score: number | null;
+  confidence: number | null;
+  status: "pending" | "accepted" | "rejected";
+  created_at: string;
 };
 
 /** call_logs テーブル（架電履歴。clinics に 1:N で従属） */
