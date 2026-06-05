@@ -52,11 +52,18 @@ export function ClinicListRealtime({ initial }: { initial: Clinic[] }) {
   }, [filtered, groupBy]);
 
   return (
-    <div className="space-y-4">
+    <div>
       <FilterBar clinics={clinics} filters={filters} onChange={setFilters} />
 
-      <div className="flex items-center justify-between px-1">
-        <span className="text-sm text-slate-500">{filtered.length}件</span>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
+        <span className="list-count">{filtered.length}件</span>
         <GroupToggle value={groupBy} onChange={setGroupBy} />
       </div>
 

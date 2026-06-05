@@ -1,6 +1,8 @@
 // components/call-button.tsx
 // 設計書 §3「ワンタップ発信（要件5）」: 電話番号からハイフン・空白を
-// 除去して tel: URI にする。
+// 除去して tel: URI にする。Dentia.html の .mini-fab / .btn-primary に対応。
+import { Icon } from "@/components/icon";
+
 export function CallButton({
   phone,
   compact = false,
@@ -16,20 +18,18 @@ export function CallButton({
       <a
         href={`tel:${tel}`}
         aria-label={`${phone} に発信`}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md transition active:scale-95"
+        className="mini-fab"
         onClick={(e) => e.stopPropagation()}
       >
-        <span className="text-lg">📞</span>
+        <Icon name="phone" fill size={19} style={{ color: "#fff" }} />
       </a>
     );
   }
 
   return (
-    <a
-      href={`tel:${tel}`}
-      className="block rounded-xl bg-emerald-600 px-4 py-3 text-center font-bold text-white shadow-sm transition active:scale-[0.99] hover:bg-emerald-700"
-    >
-      📞 {phone} に発信
+    <a href={`tel:${tel}`} className="btn btn-primary">
+      <Icon name="phone" fill size={22} style={{ color: "#fff" }} />
+      {phone} に発信
     </a>
   );
 }

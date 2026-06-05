@@ -13,26 +13,29 @@ export function GroupedClinicList({
   grouped: boolean;
 }) {
   if (groups.every((g) => g.items.length === 0)) {
-    return (
-      <p className="rounded-xl border border-dashed border-slate-200 py-10 text-center text-sm text-slate-400">
-        条件に合う医院がありません
-      </p>
-    );
+    return <p className="empty">条件に合う医院がありません</p>;
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {groups.map((group) => (
         <section key={group.key}>
           {grouped && (
-            <div className="mb-2 flex items-center gap-2 px-1">
-              <h2 className="text-sm font-bold text-slate-700">{group.label}</h2>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
-                {group.items.length}件
-              </span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "0 2px 10px",
+              }}
+            >
+              <h2 style={{ fontSize: 15, fontWeight: 700, color: "var(--ink)" }}>
+                {group.label}
+              </h2>
+              <span className="badge b-gray">{group.items.length}件</span>
             </div>
           )}
-          <div className="space-y-2">
+          <div className="cards">
             {group.items.map((clinic) => (
               <ClinicCard key={clinic.id} clinic={clinic} />
             ))}

@@ -2,34 +2,39 @@
 "use client";
 
 import { useActionState } from "react";
+import { Icon } from "@/components/icon";
 import { login } from "./actions";
 
 export default function LoginPage() {
   const [error, formAction, pending] = useActionState(login, null);
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-6">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-2xl">
-            🦷
+    <main className="auth-wrap">
+      <div className="auth-card">
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div className="auth-mark">
+            <Icon name="tooth" size={28} fill />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">
+          <h1 className="p2-name" style={{ marginTop: 0 }}>
             Dentia — 歯科医院 架電CRM
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p
+            style={{
+              marginTop: 8,
+              fontSize: 14,
+              fontWeight: 500,
+              color: "var(--muted)",
+            }}
+          >
             電話をかける → 結果を残す → 次に進む
           </p>
         </div>
 
-        <form
-          action={formAction}
-          className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-        >
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-500">
-              合言葉
-            </label>
+        <form action={formAction}>
+          <label className="fld-lbl first" style={{ display: "block" }}>
+            合言葉
+          </label>
+          <div className="ta-wrap" style={{ padding: "4px 14px" }}>
             <input
               name="password"
               type="password"
@@ -37,21 +42,49 @@ export default function LoginPage() {
               autoFocus
               autoComplete="current-password"
               placeholder="チーム共通の合言葉"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
+              style={{
+                width: "100%",
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                fontSize: 15,
+                color: "var(--ink)",
+                padding: "10px 0",
+              }}
             />
           </div>
 
-          {error && <p className="text-xs text-rose-600">{error}</p>}
+          {error && (
+            <p
+              style={{
+                marginTop: 10,
+                fontSize: 13,
+                fontWeight: 600,
+                color: "var(--red-fg)",
+              }}
+            >
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={pending}
-            className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+            className={"btn btn-primary" + (pending ? " disabled" : "")}
+            style={{ marginTop: 18 }}
           >
             {pending ? "ログイン中…" : "ログイン"}
           </button>
 
-          <p className="pt-1 text-center text-xs text-slate-400">
+          <p
+            style={{
+              marginTop: 13,
+              textAlign: "center",
+              fontSize: 13,
+              fontWeight: 500,
+              color: "var(--muted2)",
+            }}
+          >
             合言葉はチーム管理者にお問い合わせください
           </p>
         </form>

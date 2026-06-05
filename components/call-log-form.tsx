@@ -2,12 +2,14 @@
 // 設計書 §3 Phase 3: 架電結果＋メモを登録。
 // call_logs に insert し、同時に clinics.latest_memo / status / next_action_at
 // を更新する（一覧表示用の冗長カラムをここで同期）。
+// Dentia.html の .stgrid/.stbtn/.ta-wrap/.btn-primary に対応。
 "use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Icon } from "@/components/icon";
 import { createClient } from "@/lib/supabase/client";
-import { STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
+import { STATUS_OPTIONS } from "@/lib/status";
 import type { ClinicStatus } from "@/lib/types";
 
 export function CallLogForm({
@@ -22,6 +24,7 @@ export function CallLogForm({
   const [memo, setMemo] = useState("");
   const [nextAt, setNextAt] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function submit() {
@@ -54,70 +57,99 @@ export function CallLogForm({
         return;
       }
 
+      setSaved(true);
       setMemo("");
       setNextAt("");
       router.refresh(); // タイムライン・ヘッダを再取得
+      setTimeout(() => setSaved(false), 1500);
     });
   }
 
   return (
-    <div className="space-y-3">
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-slate-500">
-          結果（ステータス）
-        </label>
-        <div className="grid grid-cols-3 gap-2">
-          {STATUS_ORDER.map((s) => (
+    <div>
+      <div className="fld-lbl first">結果（ステータス）</div>
+      <div className="stgrid">
+        {STATUS_OPTIONS.map((o) => {
+          const active = o.value === outcome;
+          return (
             <button
-              key={s}
+              key={o.value}
               type="button"
-              onClick={() => setOutcome(s)}
-              className={`rounded-xl px-2 py-2.5 text-sm font-medium transition ${
-                s === outcome
-                  ? "bg-emerald-600 text-white"
-                  : "bg-slate-50 text-slate-500 hover:bg-slate-100"
-              }`}
+              onClick={() => setOutcome(o.value)}
+              className={`stbtn s-${o.color}` + (active ? " on" : "")}
             >
-              {STATUS_LABEL[s]}
+              {o.line ? (
+                <Icon name={o.icon} size={30} sw={1.8} className="line-ic" />
+              ) : (
+                <span className="circ">
+                  <Icon
+                    name={o.icon}
+                    size={24}
+                    fill={o.fill}
+                    sw={2.2}
+                    style={{ color: "#fff" }}
+                  />
+                </span>
+              )}
+              {o.label}
             </button>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-slate-500">
-          メモ（ヒアリング内容・次回の約束など）
-        </label>
+      <div className="fld-lbl">メモ（ヒアリング内容・次回の約束など）</div>
+      <div className="ta-wrap">
         <textarea
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
-          rows={3}
+          maxLength={200}
           placeholder="例）院長不在。木曜午後に再連絡の約束。"
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none"
         />
+        <div className="ta-count">{memo.length}/200</div>
       </div>
 
-      <div>
-        <label className="mb-1.5 block text-xs font-medium text-slate-500">
-          次回予定（任意）
-        </label>
-        <input
-          type="datetime-local"
-          value={nextAt}
-          onChange={(e) => setNextAt(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:border-emerald-400 focus:outline-none"
-        />
-      </div>
+      <div className="fld-lbl">次回予定（任意）</div>
+      <input
+        type="datetime-local"
+        value={nextAt}
+        onChange={(e) => setNextAt(e.target.value)}
+        className="field"
+      />
 
-      {error && <p className="text-xs text-rose-600">{error}</p>}
+      {error && (
+        <p
+          style={{
+            marginTop: 12,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--red-fg)",
+          }}
+        >
+          {error}
+        </p>
+      )}
 
       <button
         type="button"
         onClick={submit}
         disabled={pending}
-        className="w-full rounded-xl bg-emerald-600 px-4 py-3 font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+        className={
+          "btn btn-primary" +
+          (pending ? " disabled" : "") +
+          (saved ? " ok" : "")
+        }
+        style={{ marginTop: 18 }}
       >
-        {pending ? "保存中…" : "結果を保存"}
+        {saved ? (
+          <>
+            <Icon name="check" size={22} style={{ color: "#fff" }} />
+            保存しました
+          </>
+        ) : pending ? (
+          "保存中…"
+        ) : (
+          "結果を保存"
+        )}
       </button>
     </div>
   );

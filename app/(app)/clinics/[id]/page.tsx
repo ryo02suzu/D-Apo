@@ -1,13 +1,16 @@
 // app/(app)/clinics/[id]/page.tsx
 // 設計書 §3: 医院詳細。基本情報＋発信ボタン＋ステータス変更＋
 // メモ付き架電結果フォーム＋過去履歴のタイムライン。
+// Dentia.html の .p3-top / .badges / .tabs / .timeline / .info-row に対応。
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CallButton } from "@/components/call-button";
 import { CallLogForm } from "@/components/call-log-form";
 import { CallLogTimeline } from "@/components/call-log-timeline";
+import { ClinicDetailTabs } from "@/components/clinic-detail-tabs";
+import { Icon } from "@/components/icon";
 import { OpenStatusBadge } from "@/components/open-status-badge";
 import { PhoneEditor } from "@/components/phone-editor";
+import { StatusBadge } from "@/components/status-badge";
 import { StatusSelect } from "@/components/status-select";
 import { createClient } from "@/lib/supabase/server";
 import type { CallLogWithUser, Clinic } from "@/lib/types";
@@ -38,72 +41,90 @@ export default async function ClinicDetailPage({
     .order("created_at", { ascending: false });
 
   const logs = (logsData ?? []) as CallLogWithUser[];
+  const tel = c.phone ? c.phone.replace(/[^\d+]/g, "") : "";
 
   return (
-    <div className="space-y-5">
-      <Link
-        href="/clinics"
-        className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
-      >
-        ← 医院一覧へ
-      </Link>
+    <div className="pbody np">
+      <div className="apphead" style={{ margin: "0 -18px", borderBottom: "none" }}>
+        <Link href="/clinics" className="ah-btn">
+          <Icon name="chevL" />
+        </Link>
+        <span className="title" />
+        <span style={{ width: 34 }} />
+      </div>
 
-      {/* 基本情報 */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="mb-1">
-              <OpenStatusBadge hours={c.hours} />
+      <div className="p3-top">
+        <div className="name">{c.name}</div>
+        {c.phone && (
+          <a className="call-fab" href={`tel:${tel}`}>
+            <Icon name="phone" fill size={24} style={{ color: "#fff" }} />
+          </a>
+        )}
+      </div>
+
+      {c.phone && (
+        <a className="tel" href={`tel:${tel}`}>
+          <Icon name="phone" size={16} style={{ color: "var(--muted)" }} />
+          {c.phone}
+        </a>
+      )}
+
+      <div className="badges">
+        <StatusBadge status={c.status} />
+        <OpenStatusBadge hours={c.hours} />
+      </div>
+
+      <ClinicDetailTabs
+        history={<CallLogTimeline logs={logs} />}
+        info={
+          <div className="info">
+            <div className="info-row">
+              <span className="ik">電話番号</span>
+              <div className="iv" style={{ flex: 1, minWidth: 0 }}>
+                <PhoneEditor
+                  clinicId={c.id}
+                  phone={c.phone}
+                  phoneSource={c.phone_source}
+                  phoneVerified={c.phone_verified}
+                />
+              </div>
             </div>
-            <h1 className="text-xl font-bold text-slate-900">{c.name}</h1>
             {c.address && (
-              <p className="mt-1 text-sm text-slate-500">
-                {c.prefecture}
-                {c.city}
-                {c.address}
-              </p>
+              <div className="info-row">
+                <span className="ik">住所</span>
+                <span className="iv">
+                  {c.prefecture}
+                  {c.city}
+                  {c.address}
+                </span>
+              </div>
             )}
             {c.business_hours && (
-              <p className="mt-1 text-xs text-slate-400">🕒 {c.business_hours}</p>
+              <div className="info-row">
+                <span className="ik">診療時間</span>
+                <span className="iv">{c.business_hours}</span>
+              </div>
             )}
+            <div className="info-row">
+              <span className="ik">エリア</span>
+              <span className="iv">
+                {c.prefecture} {c.city}
+              </span>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-3 border-t border-slate-100 pt-3">
-          <PhoneEditor
-            clinicId={c.id}
-            phone={c.phone}
-            phoneSource={c.phone_source}
-            phoneVerified={c.phone_verified}
-          />
-        </div>
-
-        <div className="mt-4">
-          <CallButton phone={c.phone} />
-        </div>
-      </section>
-
-      {/* ステータス変更 */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-sm font-medium text-slate-500">
-          現在のステータス
-        </h2>
-        <StatusSelect clinicId={c.id} value={c.status} />
-      </section>
-
-      {/* 架電結果入力 */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-sm font-medium text-slate-500">
-          架電結果を入力
-        </h2>
-        <CallLogForm clinicId={c.id} defaultStatus={c.status} />
-      </section>
-
-      {/* 履歴 */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-3 text-sm font-medium text-slate-500">架電履歴</h2>
-        <CallLogTimeline logs={logs} />
-      </section>
+        }
+        result={
+          <div style={{ paddingTop: 18 }}>
+            <div className="fld-lbl first">現在のステータス</div>
+            <StatusSelect clinicId={c.id} value={c.status} />
+            <div
+              className="divider"
+              style={{ margin: "22px -18px 0" }}
+            />
+            <CallLogForm clinicId={c.id} defaultStatus={c.status} />
+          </div>
+        }
+      />
     </div>
   );
 }

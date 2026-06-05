@@ -1,10 +1,11 @@
 // components/filter-bar.tsx
 // 設計書 §3/§5: 医院名検索＋都道府県／市区町村／ステータス絞り込み。
-// 市区町村は選択中の都道府県に連動する（distinct 抽出）。
+// Dentia.html の .search-bar / .chips / .chip（配色付き）に対応。
 "use client";
 
 import { useMemo } from "react";
-import { STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
+import { Icon } from "@/components/icon";
+import { STATUS_COLOR, STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
 import type { Clinic, ClinicStatus } from "@/lib/types";
 
 export type Filters = {
@@ -39,7 +40,9 @@ export function FilterBar({
       [
         ...new Set(
           clinics
-            .filter((c) => !filters.prefecture || c.prefecture === filters.prefecture)
+            .filter(
+              (c) => !filters.prefecture || c.prefecture === filters.prefecture,
+            )
             .map((c) => c.city)
             .filter(Boolean),
         ),
@@ -47,24 +50,67 @@ export function FilterBar({
     [clinics, filters.prefecture],
   );
 
-  const selectClass =
-    "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-emerald-400 focus:outline-none";
-
-  const hasFilter =
-    filters.q || filters.prefecture || filters.city || filters.status || filters.onlyOpen;
-
   return (
-    <div className="space-y-2">
-      <input
-        type="search"
-        inputMode="search"
-        placeholder="医院名で検索"
-        value={filters.q}
-        onChange={(e) => onChange({ ...filters, q: e.target.value })}
-        className={`w-full ${selectClass}`}
-      />
+    <div>
+      <div className="search-bar">
+        <Icon name="search" size={17} style={{ color: "var(--muted2)" }} />
+        <input
+          type="search"
+          inputMode="search"
+          placeholder="医院名・住所で検索"
+          value={filters.q}
+          onChange={(e) => onChange({ ...filters, q: e.target.value })}
+        />
+        {filters.q && (
+          <button
+            type="button"
+            className="clr"
+            onClick={() => onChange({ ...filters, q: "" })}
+            aria-label="検索をクリア"
+          >
+            <Icon name="x" size={15} />
+          </button>
+        )}
+      </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* ステータス チップ */}
+      <div className="chips">
+        <button
+          type="button"
+          className={"chip" + (!filters.status ? " on" : "")}
+          onClick={() => onChange({ ...filters, status: undefined })}
+        >
+          すべて
+        </button>
+        {STATUS_ORDER.map((s) => (
+          <button
+            key={s}
+            type="button"
+            className={
+              `chip chip-${STATUS_COLOR[s]}` +
+              (filters.status === s ? " on" : "")
+            }
+            onClick={() =>
+              onChange({
+                ...filters,
+                status: filters.status === s ? undefined : s,
+              })
+            }
+          >
+            {STATUS_LABEL[s]}
+          </button>
+        ))}
+      </div>
+
+      {/* エリア・営業中フィルタ */}
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          paddingTop: 11,
+        }}
+      >
         <select
           value={filters.prefecture ?? ""}
           onChange={(e) =>
@@ -74,7 +120,8 @@ export function FilterBar({
               city: undefined, // 都道府県を変えたら市区町村はリセット
             })
           }
-          className={selectClass}
+          className="field"
+          style={{ width: "auto", flex: "1 1 0", minWidth: 0 }}
         >
           <option value="">都道府県</option>
           {prefectures.map((p) => (
@@ -89,7 +136,8 @@ export function FilterBar({
           onChange={(e) =>
             onChange({ ...filters, city: e.target.value || undefined })
           }
-          className={selectClass}
+          className="field"
+          style={{ width: "auto", flex: "1 1 0", minWidth: 0 }}
         >
           <option value="">市区町村</option>
           {cities.map((c) => (
@@ -99,43 +147,25 @@ export function FilterBar({
           ))}
         </select>
 
-        <select
-          value={filters.status ?? ""}
-          onChange={(e) =>
-            onChange({
-              ...filters,
-              status: (e.target.value || undefined) as ClinicStatus | undefined,
-            })
-          }
-          className={selectClass}
+        <label
+          className="chip"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            cursor: "pointer",
+          }}
         >
-          <option value="">すべてのステータス</option>
-          {STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
-
-        <label className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
           <input
             type="checkbox"
             checked={!!filters.onlyOpen}
-            onChange={(e) => onChange({ ...filters, onlyOpen: e.target.checked })}
-            className="accent-emerald-600"
+            onChange={(e) =>
+              onChange({ ...filters, onlyOpen: e.target.checked })
+            }
+            style={{ accentColor: "var(--teal)" }}
           />
           営業中のみ
         </label>
-
-        {hasFilter && (
-          <button
-            type="button"
-            onClick={() => onChange({ q: "" })}
-            className="rounded-lg px-3 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50"
-          >
-            条件をクリア
-          </button>
-        )}
       </div>
     </div>
   );
