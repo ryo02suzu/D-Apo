@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="format-detection" content="telephone=no">
+<title>歯科医院 架電CRM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --teal:#0c8c8b;
+    --teal-d:#0a7877;
+    --ink:#1f2a33;
+    --ink2:#3a4750;
+    --muted:#6b7682;
+    --muted2:#9aa4ae;
+    --line:#eceff1;
+    --line2:#e3e7ea;
+    --page:#ffffff;
+    --card:#f6f8f9;
+
+    --gray:#9aa4ae;    --gray-bg:#eef1f3;   --gray-fg:#69737d;
+    --amber:#eab308;   --amber-bg:#fdf2d4;  --amber-fg:#c08a05;
+    --orange:#f3722c;  --orange-bg:#fde6d6; --orange-fg:#df6320;
+    --cyan:#0c8c8b;    --cyan-bg:#d3edec;   --cyan-fg:#0a8584;
+    --green:#22b14c;   --green-bg:#d9f3df;  --green-fg:#1a9a45;
+    --red:#ef5350;     --red-bg:#fce0df;    --red-fg:#dc4843;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Noto Sans JP",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--page);color:var(--ink);
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  }
+  .wrap{max-width:1024px;margin:0 auto;padding:24px 20px 48px;}
+  svg{display:block}
+  a{color:inherit;text-decoration:none}
+  .tel,.te,.p2-tel{white-space:nowrap}
+  .ico{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+  /* ---------- Header ---------- */
+  .header{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 4px 26px;gap:24px;}
+  .brand{display:flex;align-items:flex-start;gap:14px;}
+  .tooth{width:36px;height:38px;color:var(--teal);flex:none;margin-top:2px}
+  .brand h1{font-size:27px;font-weight:900;letter-spacing:.5px;color:var(--ink);line-height:1.15}
+  .brand p{font-size:14px;color:var(--muted);margin-top:6px;font-weight:500}
+  .presence{display:flex;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+  .pill{display:inline-flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line2);
+        border-radius:999px;padding:9px 18px;font-size:14px;font-weight:600;color:var(--ink2);white-space:nowrap}
+  .pill .dot{width:9px;height:9px;border-radius:50%;background:var(--teal)}
+
+  /* ---------- Phones ---------- */
+  .phones{display:flex;justify-content:space-between;gap:18px;align-items:stretch;}
+  .phone{flex:1 1 0;min-width:0;background:#fff;border:1.5px solid #e7eaed;border-radius:32px;
+         box-shadow:0 6px 26px rgba(31,42,51,.05);display:flex;flex-direction:column;min-height:892px;overflow:hidden}
+  .statusbar{display:flex;justify-content:space-between;align-items:center;padding:15px 24px 4px;font-size:14px;font-weight:700;color:var(--ink)}
+  .statusbar .sb-r{display:flex;align-items:center;gap:6px;color:var(--ink)}
+  .apphead{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 14px;color:var(--ink)}
+  .apphead .title{font-size:17px;font-weight:700}
+  .apphead .ttl-link{font-size:15px;font-weight:600;color:var(--teal)}
+  .pbody{padding:4px 18px 0;flex:1;display:flex;flex-direction:column}
+  .pbody.np{padding-top:0}
+
+  .divider{height:1px;background:var(--line);margin:0 -18px}
+  .sec{padding:18px 0}
+  .sec-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+  .sec-head h3{font-size:15px;font-weight:700;color:var(--ink)}
+  .link{font-size:13px;font-weight:600;color:var(--teal);cursor:pointer}
+
+  /* progress card */
+  .progress-card{margin:6px 0 0}
+  .pc-top{display:flex;justify-content:space-between;align-items:baseline}
+  .pc-top .lbl{font-size:14px;font-weight:700;color:var(--ink)}
+  .pc-num{margin:8px 0 12px;display:flex;align-items:baseline;gap:6px}
+  .pc-num b{font-size:34px;font-weight:900;color:var(--ink);line-height:1}
+  .pc-num span{font-size:15px;color:var(--muted);font-weight:500}
+  .bar{height:8px;border-radius:6px;background:#e8ecee;overflow:hidden}
+  .bar i{display:block;height:100%;width:28%;background:var(--teal);border-radius:6px}
+  .stat3{display:flex;margin-top:18px}
+  .stat3 .cell{flex:1;text-align:center;padding:0 4px}
+  .stat3 .cell+.cell{border-left:1px solid var(--line)}
+  .stat3 .k{font-size:12px;color:var(--muted);font-weight:500}
+  .stat3 .v{font-size:19px;font-weight:800;color:var(--ink);margin-top:5px}
+  .stat3 .v small{font-size:12px;font-weight:600;color:var(--muted);margin-left:1px}
+
+  /* clinic block */
+  .badge{display:inline-flex;align-items:center;padding:4px 11px;border-radius:7px;font-size:12px;font-weight:700;line-height:1.2;white-space:nowrap}
+  .b-gray{background:var(--gray-bg);color:var(--gray-fg)}
+  .b-amber{background:var(--amber-bg);color:var(--amber-fg)}
+  .b-orange{background:var(--orange-bg);color:var(--orange-fg)}
+  .b-cyan{background:var(--cyan-bg);color:var(--cyan-fg)}
+  .b-green{background:var(--green-bg);color:var(--green-fg)}
+  .b-red{background:var(--red-bg);color:var(--red-fg)}
+
+  .clinic .row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .clinic .row1 .ago{font-size:13px;color:var(--muted2);font-weight:500}
+  .clinic .name{font-size:20px;font-weight:800;color:var(--ink);letter-spacing:.5px}
+  .clinic .addr{font-size:13px;color:var(--muted);margin-top:7px;font-weight:500}
+  .tel{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--ink2);margin-top:9px;font-weight:600}
+  .tel .ico{width:16px;height:16px;color:var(--muted)}
+  .memo-lbl{font-size:12px;color:var(--muted2);margin-top:16px;font-weight:600}
+  .memo-tx{font-size:14px;color:var(--ink2);margin-top:5px;font-weight:500}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:none;cursor:pointer;
+       font-family:inherit;font-weight:700;border-radius:14px}
+  .btn-primary{background:var(--teal);color:#fff;font-size:18px;padding:18px;box-shadow:0 6px 16px rgba(12,140,139,.22)}
+  .btn-primary .ico{width:22px;height:22px;color:#fff;fill:#fff;stroke:none}
+  .btn-outline{background:#fff;color:var(--teal);border:1.5px solid #d6e3e3;font-size:15px;padding:15px}
+  .btn-outline .ico{width:18px;height:18px;color:var(--teal)}
+  .clinic .btn-primary{margin-top:18px}
+
+  /* schedule list */
+  .sched .item{display:flex;align-items:center;gap:14px;padding:13px 0;font-size:14px}
+  .sched .item+.item{border-top:1px solid var(--line)}
+  .sched .time{font-weight:800;color:var(--ink);width:48px;flex:none}
+  .sched .cl{flex:1;color:var(--ink2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* tab bar */
+  .tabbar{margin-top:auto;display:flex;align-items:flex-end;justify-content:space-around;
+          border-top:1px solid var(--line);padding:8px 6px 12px;position:relative}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted2);flex:1}
+  .tab .ico{width:22px;height:22px}
+  .tab.on{color:var(--teal)}
+  .tab.fab{transform:translateY(-16px);gap:7px;color:var(--ink2)}
+  .fab-c{width:52px;height:52px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;
+         box-shadow:0 8px 18px rgba(12,140,139,.32)}
+  .fab-c .ico{width:24px;height:24px;color:#fff;fill:#fff;stroke:none}
+
+  /* ---------- Phone 2 ---------- */
+  .p2-name{font-size:22px;font-weight:800;color:var(--ink);text-align:center;letter-spacing:.5px;margin-top:8px}
+  .p2-tel{text-align:center;font-size:15px;color:var(--ink2);font-weight:600;margin-top:6px}
+  .fld-lbl{font-size:14px;font-weight:700;color:var(--ink);margin:22px 0 12px}
+  .stgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stbtn{border:none;cursor:pointer;font-family:inherit;border-radius:16px;padding:18px 8px 16px;
+         display:flex;flex-direction:column;align-items:center;gap:11px;font-size:15px;font-weight:700}
+  .stbtn .line-ic{width:30px;height:30px;stroke-width:1.8;fill:none}
+  .stbtn .circ{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .stbtn .circ .ico{width:24px;height:24px;color:#fff;fill:#fff;stroke:#fff;stroke-width:0}
+  .stbtn .circ .ico.str{fill:none;stroke:#fff;stroke-width:2.2}
+  .s-gray{background:var(--gray-bg);color:var(--gray-fg)}      .s-gray .line-ic{color:var(--gray)}
+  .s-amber{background:var(--amber-bg);color:var(--amber-fg)}   .s-amber .line-ic{color:var(--amber-fg)}
+  .s-orange{background:var(--orange-bg);color:var(--orange-fg)}.s-orange .circ{background:var(--orange)}
+  .s-cyan{background:var(--cyan-bg);color:var(--cyan-fg)}      .s-cyan .circ{background:var(--cyan)}
+  .s-green{background:var(--green-bg);color:var(--green-fg)}   .s-green .circ{background:var(--green)}
+  .s-red{background:var(--red-bg);color:var(--red-fg)}         .s-red .circ{background:var(--red)}
+
+  .ta-wrap{border:1.5px solid var(--line2);border-radius:14px;padding:14px 14px 8px;position:relative}
+  .ta-wrap textarea{width:100%;border:none;outline:none;resize:none;font-family:inherit;font-size:14px;color:var(--ink2);min-height:78px;background:transparent}
+  .ta-wrap textarea::placeholder{color:var(--muted2)}
+  .ta-count{text-align:right;font-size:12px;color:var(--muted2);font-weight:500}
+  .voice{margin-top:16px}
+  .p2foot{margin-top:auto;padding:18px 0 22px}
+  .p2foot .btn-primary{font-size:19px;padding:19px}
+  .p2foot .cap{text-align:center;font-size:13px;color:var(--muted2);margin-top:14px;font-weight:500}
+
+  /* ---------- Phone 3 ---------- */
+  .p3-top{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .p3-top .name{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:.5px}
+  .call-fab{width:52px;height:52px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;
+            box-shadow:0 8px 18px rgba(12,140,139,.3);flex:none}
+  .call-fab .ico{width:24px;height:24px;color:#fff;fill:#fff;stroke:none}
+  .p3 .tel{margin-top:10px}
+  .p3 .addr{font-size:14px;color:var(--ink2);margin-top:14px;font-weight:500}
+  .p3 .owner{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  .p3 .owner span{font-size:14px;color:var(--ink2);font-weight:500}
+  .chg{font-size:13px;font-weight:600;color:var(--teal);border:1.5px solid #d6e3e3;background:#fff;border-radius:9px;padding:7px 12px;cursor:pointer;font-family:inherit}
+  .p3 .badges{display:flex;gap:8px;margin-top:16px}
+  .tabs{display:flex;border-bottom:1.5px solid var(--line);margin-top:20px}
+  .tabs .t{flex:1;text-align:center;padding:12px 0 13px;font-size:15px;font-weight:700;color:var(--muted2);cursor:pointer;position:relative}
+  .tabs .t.on{color:var(--teal)}
+  .tabs .t.on::after{content:"";position:absolute;left:0;right:0;bottom:-1.5px;height:2.5px;background:var(--teal);border-radius:2px}
+
+  .timeline{padding-top:18px}
+  .tl{display:flex;gap:14px}
+  .tl .rail{display:flex;flex-direction:column;align-items:center;flex:none;width:14px}
+  .tl .ring{width:13px;height:13px;border-radius:50%;border:2.5px solid var(--cyan);background:#fff;margin-top:4px}
+  .tl .stem{width:2px;flex:1;background:var(--line2);margin:4px 0 0}
+  .tl .body{padding-bottom:24px;flex:1}
+  .tl:last-child .body{padding-bottom:8px}
+  .tl .meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .tl .dt{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+  .tl .who{font-size:13px;color:var(--ink2);font-weight:600}
+  .tl .meta .badge{margin-left:auto}
+  .tl .note{font-size:14px;color:var(--ink2);margin-top:8px;font-weight:500}
+  .p3foot{margin-top:auto;padding:18px 0 22px}
+
+  /* ---------- Component grid ---------- */
+  .grid-sec{margin-top:30px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;align-items:start}
+  .grid-sec.r2{grid-template-columns:1fr 1.45fr 1.7fr;margin-top:18px}
+  .cc{background:var(--card);border:1px solid #e8ebed;border-radius:16px;padding:22px 22px 24px}
+  .cc h2{font-size:16px;font-weight:700;color:var(--ink);text-align:center;margin-bottom:18px}
+
+  /* summary */
+  .sumrow{display:flex;align-items:center;gap:11px;padding:8px 0;font-size:14px;cursor:pointer}
+  .sumrow .sdot{width:10px;height:10px;border-radius:50%;flex:none}
+  .sumrow .slabel{color:var(--ink2);font-weight:600}
+  .sumrow .scount{margin-left:auto;color:var(--ink);font-weight:800}
+  .sumrow .scount small{font-size:11px;font-weight:600;color:var(--muted);margin-left:1px}
+  .sumrow .chev{width:16px;height:16px;color:var(--muted2);stroke-width:2.4}
+
+  /* filter */
+  .search{display:flex;align-items:center;gap:9px;border:1.5px solid var(--line2);border-radius:11px;padding:11px 13px;color:var(--muted2);font-size:14px}
+  .search .ico{width:17px;height:17px}
+  .select{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--line2);border-radius:11px;
+          padding:12px 13px;font-size:14px;color:var(--ink2);font-weight:600;margin-top:12px;cursor:pointer}
+  .select .ico{width:17px;height:17px;color:var(--muted2)}
+  .clearlink{text-align:center;font-size:13px;font-weight:600;color:var(--teal);margin-top:16px;cursor:pointer}
+
+  /* realtime */
+  .person{display:flex;align-items:center;gap:12px;padding:9px 0}
+  .person+.person{border-top:1px solid var(--line)}
+  .av{width:40px;height:40px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff}
+  .person .pinfo b{font-size:14px;font-weight:700;color:var(--ink);display:block}
+  .person .pinfo span{font-size:12px;color:var(--muted);font-weight:500}
+  .person .live{width:9px;height:9px;border-radius:50%;background:var(--green);margin-left:auto;flex:none}
+  .rt-note{display:flex;gap:8px;align-items:flex-start;background:#eef5f9;border-radius:11px;padding:12px 13px;margin-top:14px}
+  .rt-note .ico{width:16px;height:16px;color:#3d92c4;flex:none;margin-top:1px}
+  .rt-note span{font-size:12.5px;color:#3d7ea0;font-weight:600;line-height:1.5}
+
+  /* quick action */
+  .cc.qa{display:flex;flex-direction:column;align-items:center}
+  .qa-btn{width:124px;height:124px;border-radius:50%;background:var(--teal);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+          color:#fff;box-shadow:0 12px 26px rgba(12,140,139,.3);cursor:pointer;margin:6px 0 18px}
+  .qa-btn .ico{width:34px;height:34px;color:#fff;fill:#fff;stroke:none}
+  .qa-btn span{font-size:14px;font-weight:700}
+  .cc.qa .cap{text-align:center;font-size:13px;color:var(--muted);line-height:1.7;font-weight:500}
+
+  /* badges showcase */
+  .badge-wrap{display:flex;flex-wrap:wrap;gap:11px;justify-content:flex-start}
+  .badge-wrap .badge{font-size:13px;padding:6px 13px}
+
+  /* list clinic card */
+  .listcard{background:#fff;border:1px solid var(--line2);border-radius:13px;padding:16px 17px}
+  .listcard .r1{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+  .listcard .r1 .ago{font-size:12px;color:var(--muted2);font-weight:500}
+  .listcard .nm{font-size:18px;font-weight:800;color:var(--ink)}
+  .listcard .ad{font-size:13px;color:var(--muted);margin-top:6px;font-weight:500}
+  .listcard .te{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);margin-top:8px;font-weight:600}
+  .listcard .te .ico{width:14px;height:14px;color:var(--muted)}
+  .listcard .foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:13px;border-top:1px solid var(--line)}
+  .listcard .meta{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);font-weight:500}
+  .listcard .meta span{display:flex;align-items:center;gap:5px}
+  .listcard .meta .ico{width:14px;height:14px;color:var(--muted2)}
+  .listcard .mini-fab{width:42px;height:42px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 6px 14px rgba(12,140,139,.28)}
+  .listcard .mini-fab .ico{width:19px;height:19px;color:#fff;fill:#fff;stroke:none}
+
+  /* dashboard */
+  .dash-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:18px}
+  .dash-head h4{font-size:15px;font-weight:700;color:var(--ink)}
+  .dash3{display:flex}
+  .dash3 .c{flex:1;text-align:center}
+  .dash3 .k{font-size:13px;color:var(--muted);font-weight:600}
+  .dash3 .v{font-size:21px;font-weight:900;color:var(--ink);margin-top:7px}
+  .dash3 .v small{font-size:12px;font-weight:700;color:var(--muted);margin-left:1px}
+  .dash-bar{height:1px;background:var(--line2);margin:20px 0}
+  .dash2{display:flex}
+  .dash2 .c{flex:1}
+  .dash2 .k{font-size:13px;color:var(--muted);font-weight:600}
+  .dash2 .v{font-size:21px;font-weight:900;color:var(--ink);margin-top:7px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="header">
+    <div class="brand">
+      <svg class="tooth" viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M12 6c-1.6-2.3-3.9-3-5.7-2.4C4.3 4.2 3.2 5.9 3.2 8.4c0 2.1.6 3.7 1.1 5.7.4 1.6.5 3.1.8 4.6.2 1.1.7 2.3 1.5 2.3 1 0 1.2-1.2 1.4-2.6.2-1.3.3-2.6 1.3-2.6h1.4c1 0 1.1 1.3 1.3 2.6.2 1.4.4 2.6 1.4 2.6.8 0 1.3-1.2 1.5-2.3.3-1.5.4-3 .8-4.6.5-2 1.1-3.6 1.1-5.7 0-2.5-1.1-4.2-3.1-4.8C15.9 3 13.6 3.7 12 6Z"/>
+      </svg>
+      <div>
+        <h1>歯科医院 架電CRM</h1>
+        <p>電話をかける → 結果を残す → 次に進む</p>
+      </div>
+    </div>
+    <div class="presence">
+      <span class="pill"><span class="dot"></span>山田さんが更新中</span>
+      <span class="pill"><span class="dot"></span>鈴木さんが架電中</span>
+    </div>
+  </header>
+
+  <!-- ===================== PHONES ===================== -->
+  <div class="phones">
+
+    <!-- ---------- PHONE 1 : コールキュー ---------- -->
+    <section class="phone p1">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="sb-r">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4.5" width="3" height="7.5" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 2.5c2.6 0 5 1 6.8 2.7l1.2-1.3C14.4 1.7 11.6.5 8.5.5S2.6 1.7.5 3.9l1.2 1.3C3.5 3.5 5.9 2.5 8.5 2.5Z"/><path d="M8.5 6c1.4 0 2.7.5 3.7 1.5l1.2-1.3C12.2 4.9 10.4 4.2 8.5 4.2s-3.7.7-4.9 2L4.8 7.5C5.8 6.5 7.1 6 8.5 6Z"/><circle cx="8.5" cy="10" r="1.6"/></svg>
+          <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="3" y="3" width="16" height="7" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="5" rx="1" fill="currentColor" opacity=".5"/></svg>
+        </span>
+      </div>
+      <div class="apphead">
+        <svg class="ico" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <span class="title">コールキュー</span>
+        <svg class="ico" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      </div>
+
+      <div class="pbody">
+        <!-- progress -->
+        <div class="sec" style="padding-top:8px">
+          <div class="pc-top">
+            <span class="lbl">今日の進捗</span>
+            <span class="link">詳細を見る</span>
+          </div>
+          <div class="pc-num"><b>42</b><span>/ 150 件</span></div>
+          <div class="bar"><i></i></div>
+          <div class="stat3">
+            <div class="cell"><div class="k">ヒアリング</div><div class="v">11<small>件</small></div></div>
+            <div class="cell"><div class="k">アポ獲得</div><div class="v">2<small>件</small></div></div>
+            <div class="cell"><div class="k">ヒアリング率</div><div class="v">18.9<small>%</small></div></div>
+          </div>
+        </div>
+        <div class="divider"></div>
+
+        <!-- next clinic -->
+        <div class="sec clinic">
+          <div class="sec-head"><h3>次に電話する医院</h3><span class="link">リストを表示</span></div>
+          <div class="row1"><span class="badge b-orange">担当者不在</span><span class="ago">3日前</span></div>
+          <div class="name">○○歯科医院</div>
+          <div class="addr">東京都新宿区西新宿1-2-3</div>
+          <div class="tel">
+            <svg class="ico" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+            03-1234-5678
+          </div>
+          <div class="memo-lbl">前回メモ</div>
+          <div class="memo-tx">院長不在。木曜に再連絡する。</div>
+          <button class="btn btn-primary">
+            <svg class="ico" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+            電話する
+          </button>
+        </div>
+        <div class="divider"></div>
+
+        <!-- schedule -->
+        <div class="sec sched">
+          <div class="sec-head"><h3>次回予定</h3><span class="link">すべて見る</span></div>
+          <div class="item"><span class="time">14:00</span><span class="cl">△△歯科クリニック</span><span class="badge b-orange">担当者不在</span></div>
+          <div class="item"><span class="time">15:30</span><span class="cl">□□歯科医院</span><span class="badge b-cyan">ヒアリング済</span></div>
+          <div class="item"><span class="time">16:30</span><span class="cl">××デンタルクリニック</span><span class="badge b-gray">未架電</span></div>
+        </div>
+      </div>
+
+      <!-- tab bar -->
+      <nav class="tabbar">
+        <div class="tab on"><svg class="ico" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ホーム</div>
+        <div class="tab"><svg class="ico" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>一覧</div>
+        <div class="tab fab"><div class="fab-c"><svg class="ico" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg></div>次の医院</div>
+        <div class="tab"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>履歴</div>
+        <div class="tab"><svg class="ico" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>メニュー</div>
+      </nav>
+    </section>
+
+    <!-- ---------- PHONE 2 : 架電結果を入力 ---------- -->
+    <section class="phone p2">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="sb-r">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4.5" width="3" height="7.5" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 2.5c2.6 0 5 1 6.8 2.7l1.2-1.3C14.4 1.7 11.6.5 8.5.5S2.6 1.7.5 3.9l1.2 1.3C3.5 3.5 5.9 2.5 8.5 2.5Z"/><path d="M8.5 6c1.4 0 2.7.5 3.7 1.5l1.2-1.3C12.2 4.9 10.4 4.2 8.5 4.2s-3.7.7-4.9 2L4.8 7.5C5.8 6.5 7.1 6 8.5 6Z"/><circle cx="8.5" cy="10" r="1.6"/></svg>
+          <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="3" y="3" width="16" height="7" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="5" rx="1" fill="currentColor" opacity=".5"/></svg>
+        </span>
+      </div>
+      <div class="apphead">
+        <svg class="ico" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        <span class="title">架電結果を入力</span>
+        <span style="width:22px"></span>
+      </div>
+
+      <div class="pbody np">
+        <div class="p2-name">○○歯科医院</div>
+        <div class="p2-tel">03-1234-5678</div>
+
+        <div class="fld-lbl">結果（ステータス）</div>
+        <div class="stgrid">
+          <button class="stbtn s-gray">
+            <svg class="ico line-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+            未架電
+          </button>
+          <button class="stbtn s-amber">
+            <svg class="ico line-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.7 13.3a16 16 0 0 0 3.4 2.6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.8.7a2 2 0 0 1 1.7 2v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-3.3-2.7m-2.7-3.3a19.8 19.8 0 0 1-3.1-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+            不通
+          </button>
+          <button class="stbtn s-orange">
+            <span class="circ"><svg class="ico str" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+            担当者不在
+          </button>
+          <button class="stbtn s-cyan">
+            <span class="circ"><svg class="ico" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg></span>
+            ヒアリング済
+          </button>
+          <button class="stbtn s-green">
+            <span class="circ"><svg class="ico str" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 15.5 11.2 17.7 15.5 13.5"/></svg></span>
+            アポ獲得
+          </button>
+          <button class="stbtn s-red">
+            <span class="circ"><svg class="ico str" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>
+            お断り
+          </button>
+        </div>
+
+        <div class="fld-lbl">メモ（任意）</div>
+        <div class="ta-wrap">
+          <textarea placeholder="聞き出した悩みや、次回約束などを入力"></textarea>
+          <div class="ta-count">0/200</div>
+        </div>
+
+        <button class="btn btn-outline voice">
+          <svg class="ico" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          音声入力
+        </button>
+
+        <div class="p2foot">
+          <button class="btn btn-primary">保存して次へ</button>
+          <div class="cap">Enterで保存</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- PHONE 3 : 医院詳細 ---------- -->
+    <section class="phone p3">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="sb-r">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4.5" width="3" height="7.5" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 2.5c2.6 0 5 1 6.8 2.7l1.2-1.3C14.4 1.7 11.6.5 8.5.5S2.6 1.7.5 3.9l1.2 1.3C3.5 3.5 5.9 2.5 8.5 2.5Z"/><path d="M8.5 6c1.4 0 2.7.5 3.7 1.5l1.2-1.3C12.2 4.9 10.4 4.2 8.5 4.2s-3.7.7-4.9 2L4.8 7.5C5.8 6.5 7.1 6 8.5 6Z"/><circle cx="8.5" cy="10" r="1.6"/></svg>
+          <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x="1" y="1" width="21" height="11" rx="3" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="3" y="3" width="16" height="7" rx="1.5" fill="currentColor"/><rect x="23.5" y="4" width="2" height="5" rx="1" fill="currentColor" opacity=".5"/></svg>
+        </span>
+      </div>
+      <div class="apphead">
+        <svg class="ico" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        <span style="width:22px"></span>
+        <span class="ttl-link">編集</span>
+      </div>
+
+      <div class="pbody np">
+        <div class="p3-top">
+          <div class="name">○○歯科医院</div>
+          <div class="call-fab"><svg class="ico" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg></div>
+        </div>
+        <div class="tel">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+          03-1234-5678
+        </div>
+        <div class="addr">東京都新宿区西新宿1-2-3</div>
+        <div class="owner">
+          <span>担当：山田 太郎</span>
+          <button class="chg">担当を変更</button>
+        </div>
+        <div class="badges">
+          <span class="badge b-orange">担当者不在</span>
+          <span class="badge b-gray">3日前更新</span>
+        </div>
+
+        <div class="tabs">
+          <div class="t on">履歴</div>
+          <div class="t">基本情報</div>
+        </div>
+
+        <div class="timeline">
+          <div class="tl">
+            <div class="rail"><div class="ring"></div><div class="stem"></div></div>
+            <div class="body">
+              <div class="meta"><span class="dt">6/10 14:32</span><span class="who">山田 太郎</span><span class="badge b-orange">担当者不在</span></div>
+              <div class="note">院長不在。木曜に再連絡する。</div>
+            </div>
+          </div>
+          <div class="tl">
+            <div class="rail"><div class="ring"></div><div class="stem"></div></div>
+            <div class="body">
+              <div class="meta"><span class="dt">6/5 11:20</span><span class="who">鈴木 花子</span><span class="badge b-amber">不通</span></div>
+              <div class="note">呼び出し音のみ。</div>
+            </div>
+          </div>
+          <div class="tl">
+            <div class="rail"><div class="ring"></div></div>
+            <div class="body">
+              <div class="meta"><span class="dt">6/1 10:15</span><span class="who">山田 太郎</span><span class="badge b-gray">未架電</span></div>
+              <div class="note">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="p3foot">
+          <button class="btn btn-outline">
+            <svg class="ico" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            架電結果を追加
+          </button>
+        </div>
+      </div>
+
+      <nav class="tabbar">
+        <div class="tab on"><svg class="ico" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>ホーム</div>
+        <div class="tab"><svg class="ico" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>一覧</div>
+        <div class="tab fab"><div class="fab-c"><svg class="ico" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg></div>次の医院</div>
+        <div class="tab"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>履歴</div>
+        <div class="tab"><svg class="ico" viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>メニュー</div>
+      </nav>
+    </section>
+  </div>
+
+  <!-- ===================== COMPONENT GRID ROW 1 ===================== -->
+  <div class="grid-sec r1">
+    <!-- summary -->
+    <div class="cc">
+      <h2>ステータス別サマリー</h2>
+      <div class="sumrow"><span class="sdot" style="background:var(--gray)"></span><span class="slabel">未架電</span><span class="scount">82<small>件</small></span><svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="sumrow"><span class="sdot" style="background:var(--amber)"></span><span class="slabel">不通</span><span class="scount">15<small>件</small></span><svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="sumrow"><span class="sdot" style="background:var(--orange)"></span><span class="slabel">担当者不在</span><span class="scount">17<small>件</small></span><svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="sumrow"><span class="sdot" style="background:var(--cyan)"></span><span class="slabel">ヒアリング済</span><span class="scount">12<small>件</small></span><svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="sumrow"><span class="sdot" style="background:var(--green)"></span><span class="slabel">アポ獲得</span><span class="scount">4<small>件</small></span><svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+      <div class="sumrow"><span class="sdot" style="background:var(--red)"></span><span class="slabel">お断り</span><span class="scount">7<small>件</small></span><svg class="ico chev" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+
+    <!-- filter -->
+    <div class="cc">
+      <h2>絞り込み</h2>
+      <div class="search"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>医院名で検索</div>
+      <div class="select">東京都<svg class="ico" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="select">新宿区<svg class="ico" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="select">すべてのステータス<svg class="ico" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="clearlink">条件をクリア</div>
+    </div>
+
+    <!-- realtime -->
+    <div class="cc">
+      <h2>リアルタイム共有</h2>
+      <div class="person"><span class="av" style="background:#5b8def">山</span><div class="pinfo"><b>山田 太郎</b><span>○○歯科医院を更新中</span></div><span class="live"></span></div>
+      <div class="person"><span class="av" style="background:#e0729e">鈴</span><div class="pinfo"><b>鈴木 花子</b><span>△△歯科に架電中</span></div><span class="live"></span></div>
+      <div class="person"><span class="av" style="background:#6bb38a">田</span><div class="pinfo"><b>田中 一郎</b><span>××歯科を閲覧中</span></div><span class="live"></span></div>
+      <div class="rt-note">
+        <svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span>他のメンバーの更新は<br>リアルタイムで反映されます</span>
+      </div>
+    </div>
+
+    <!-- quick action -->
+    <div class="cc qa">
+      <h2>クイックアクション</h2>
+      <div class="qa-btn">
+        <svg class="ico" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+        <span>次の医院へ</span>
+      </div>
+      <div class="cap">どの画面からでも<br>次の未架電医院へ進めます</div>
+    </div>
+  </div>
+
+  <!-- ===================== COMPONENT GRID ROW 2 ===================== -->
+  <div class="grid-sec r2">
+    <!-- badges -->
+    <div class="cc">
+      <h2>ステータスバッジ</h2>
+      <div class="badge-wrap">
+        <span class="badge b-gray">未架電</span>
+        <span class="badge b-amber">不通</span>
+        <span class="badge b-orange">担当者不在</span>
+        <span class="badge b-cyan">ヒアリング済</span>
+        <span class="badge b-green">アポ獲得</span>
+        <span class="badge b-red">お断り</span>
+      </div>
+    </div>
+
+    <!-- list clinic card -->
+    <div class="cc">
+      <h2>医院カード（一覧表示）</h2>
+      <div class="listcard">
+        <div class="r1"><span class="badge b-orange">担当者不在</span><span class="ago">3日前更新</span></div>
+        <div class="nm">○○歯科医院</div>
+        <div class="ad">東京都新宿区西新宿1-2-3</div>
+        <div class="te">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg>
+          03-1234-5678
+        </div>
+        <div class="foot">
+          <div class="meta">
+            <span><svg class="ico" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><line x1="16" y1="2.5" x2="16" y2="6.5"/><line x1="8" y1="2.5" x2="8" y2="6.5"/><line x1="3" y1="10" x2="21" y2="10"/></svg>次回予定: 6/13 14:00</span>
+            <span><svg class="ico" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>担当：山田 太郎</span>
+          </div>
+          <div class="mini-fab"><svg class="ico" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2Z"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- dashboard -->
+    <div class="cc">
+      <h2>進捗ダッシュボード（例）</h2>
+      <div class="dash-head"><h4>今週の進捗 (6/8〜6/14)</h4><span class="link">詳細を見る</span></div>
+      <div class="dash3">
+        <div class="c"><div class="k">架電数</div><div class="v">128<small>件</small></div></div>
+        <div class="c"><div class="k">ヒアリング</div><div class="v">28<small>件</small></div></div>
+        <div class="c"><div class="k">アポ獲得</div><div class="v">6<small>件</small></div></div>
+      </div>
+      <div class="dash-bar"></div>
+      <div class="dash2">
+        <div class="c"><div class="k">ヒアリング率</div><div class="v">21.9<small>%</small></div></div>
+        <div class="c"><div class="k">アポ率</div><div class="v">4.7<small>%</small></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
