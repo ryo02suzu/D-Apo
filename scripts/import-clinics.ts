@@ -17,7 +17,7 @@
  *       --hours    ./data/03-2_dental_speciality_hours_20251201.csv \
  *       --prefecture 東京都 [--city 新宿区] [--limit 500] [--dry-run]
  */
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import type { Interval, WeeklyHours } from "../lib/types";
 
@@ -37,6 +37,7 @@ const filterCity = getArg("city");
 const limit = getArg("limit") ? Number(getArg("limit")) : Infinity;
 const dryRun = hasFlag("dry-run");
 const source = getArg("source") ?? "mhlw";
+const outSql = getArg("out-sql"); // 指定時: DB投入せず、貼り付け用SQLファイルを出力
 
 if (!facilityPath || !hoursPath) {
   console.error(
@@ -255,6 +256,48 @@ function parseCoord(raw: string | undefined): number | null {
 }
 
 // ---------------------------------------------------------------------
+// 貼り付け用 SQL の生成（ターミナル無しの人向け：Supabase SQL Editor に貼る）
+// ---------------------------------------------------------------------
+function sqlStr(s: string | null): string {
+  return s === null ? "null" : `'${s.replace(/'/g, "''")}'`;
+}
+function sqlNum(n: number | null): string {
+  return n === null ? "null" : String(n);
+}
+function recordsToSql(records: ClinicInsert[]): string {
+  const cols =
+    "external_id,name,address,prefecture,city,business_hours,hours,lat,lng,source";
+  const lines: string[] = [
+    "-- 自動生成: 厚労省オープンデータ → clinics 投入用SQL",
+    "-- Supabase ダッシュボード → SQL Editor に貼って Run（schema.sql 実行後）",
+    "",
+  ];
+  const CHUNK = 500;
+  for (let i = 0; i < records.length; i += CHUNK) {
+    const chunk = records.slice(i, i + CHUNK);
+    lines.push(`insert into public.clinics (${cols}) values`);
+    const values = chunk.map((r) => {
+      const hours = `'${JSON.stringify(r.hours).replace(/'/g, "''")}'::jsonb`;
+      return (
+        `  (${sqlStr(r.external_id)}, ${sqlStr(r.name)}, ${sqlStr(r.address)}, ` +
+        `${sqlStr(r.prefecture)}, ${sqlStr(r.city)}, ${sqlStr(r.business_hours)}, ` +
+        `${hours}, ${sqlNum(r.lat)}, ${sqlNum(r.lng)}, ${sqlStr(r.source)})`
+      );
+    });
+    lines.push(values.join(",\n"));
+    // 再実行しても安全に（マスタ項目だけ更新、進捗・電話は保持）
+    lines.push(
+      "on conflict (external_id) do update set\n" +
+        "  name=excluded.name, address=excluded.address, prefecture=excluded.prefecture,\n" +
+        "  city=excluded.city, business_hours=excluded.business_hours, hours=excluded.hours,\n" +
+        "  lat=excluded.lat, lng=excluded.lng, source=excluded.source;",
+    );
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------
 // メイン
 // ---------------------------------------------------------------------
 async function main() {
@@ -336,6 +379,14 @@ async function main() {
     );
   }
   console.log("");
+
+  if (outSql) {
+    writeFileSync(outSql, recordsToSql(records), "utf8");
+    console.log(
+      `📝 ${records.length}件分のSQLを書き出しました: ${outSql}\n   → Supabase の SQL Editor に貼って実行してください（ターミナル不要）。`,
+    );
+    return;
+  }
 
   if (dryRun) {
     console.log("🌵 --dry-run のため DB への書き込みは行いません。");
