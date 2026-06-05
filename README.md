@@ -1,25 +1,25 @@
-# CODING AGENTS: READ THIS FIRST
+# D-Apo — 歯科医院 架電CRM（Dentia）
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+歯科医院への架電業務を効率化するモバイル向け CRM アプリのモックです。
+`Dentia.html` を**ブラウザで直接開くだけ**で動作します（ビルド・サーバー不要）。
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+## 機能
 
-## What you should do — IMPORTANT
+- **医院データ管理** — 医院名・電話番号・住所・診療時間（架空データ20件）
+- **ステータス管理** — 未架電 / 不通 / 担当者不在 / ヒアリング済 / アポ獲得 / お断り の6種
+- **メモ機能** — ヒアリング内容や次回の約束をテキスト記録
+- **通話中メモ** — 「電話する」で発信しながらリアルタイムにメモ → 通話終了でそのまま結果入力へ
+- **リアルタイム共有** — 別タブを開くと BroadcastChannel で相互に即同期。同僚の自動更新＋トースト通知の演出も
+- **ワンタップ発信** — 電話番号タップで `tel:` 発信（スマホブラウザ想定）
 
-**Read the chat transcripts first.** There are 2 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+## 画面構成
 
-**Read `project/Dentia.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+ホーム（コールキュー）／ 医院一覧 ／ 医院詳細 ／ 架電結果入力 ／ 通話中メモ ／ 架電履歴 ／ 進捗ダッシュボード
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+## カスタマイズ（Tweaks）
 
-## About the design files
+右下の Tweaks パネルから、アクセントカラー・フォント・情報密度・ダークモード・同僚ボットの ON/OFF を切り替えられます。
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+## 使い方
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
-
-## Bundle contents
-
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `Dentia` project files (HTML prototypes, assets, components)
+Dentia.html をブラウザで開くだけです。データは毎回リセットされます（永続化なし）。
