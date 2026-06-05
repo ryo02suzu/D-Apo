@@ -39,4 +39,8 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# 取り込み用の生データ（厚労省オープンデータ等）。リポジトリには含めない。
+/data
+*.zip
 next-env.d.ts

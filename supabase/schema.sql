@@ -25,6 +25,7 @@ create table if not exists public.clinics (
   next_action_at timestamptz,
   latest_memo    text,
   source         text default 'google',
+  external_id    text unique,  -- 外部データ取り込み時の元ID（厚労省オープンデータの「ID」等）。再取込の冪等キー。
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );

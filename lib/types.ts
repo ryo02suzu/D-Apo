@@ -45,6 +45,7 @@ export type Clinic = {
   next_action_at: string | null;
   latest_memo: string | null;
   source: string | null;
+  external_id: string | null;
   created_at: string;
   updated_at: string;
 };
