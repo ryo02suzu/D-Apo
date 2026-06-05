@@ -37,10 +37,14 @@ async function sign(data: string): Promise<string> {
   return toB64Url(new Uint8Array(sig));
 }
 
-/** 合言葉が一致するか。APP_PASSWORD 未設定時は常に false（誤って素通りさせない）。 */
+// 合言葉のデフォルト値。環境変数 APP_PASSWORD を設定すればそちらが優先される。
+// （Vercel で env を設定しなくても、まずはこの合言葉でログインできる）
+export const DEFAULT_PASSWORD = "dentia2026";
+
+/** 合言葉が一致するか。APP_PASSWORD 未設定時は DEFAULT_PASSWORD を使う。 */
 export function checkPassword(input: string): boolean {
-  const pw = process.env.APP_PASSWORD ?? "";
-  return pw.length > 0 && input === pw;
+  const pw = process.env.APP_PASSWORD?.trim() || DEFAULT_PASSWORD;
+  return input === pw;
 }
 
 /** ログイン Cookie に入れるトークンを発行（"<失効ms>.<署名>"）。 */
