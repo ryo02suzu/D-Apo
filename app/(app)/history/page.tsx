@@ -25,11 +25,6 @@ export default async function HistoryScreen() {
 
   return (
     <div className="pbody list-body">
-      <div className="sec-head" style={{ paddingTop: 14, marginBottom: 0 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 800 }}>架電履歴</h3>
-        <span className="count-pill">{feed.length}件</span>
-      </div>
-
       {feed.length === 0 ? (
         <p className="empty" style={{ paddingTop: 40 }}>
           まだ架電履歴がありません
@@ -47,9 +42,9 @@ export default async function HistoryScreen() {
                     <b>{h.clinics?.name ?? "(不明な医院)"}</b>
                     <span className="fi-time">{formatAt(h.created_at)}</span>
                   </div>
-                  <div className="fi-cl">
+                  <div className="fi-meta">
                     <StatusBadge status={h.outcome} />
-                    <span>{name}</span>
+                    <span className="fi-who">{name}</span>
                   </div>
                   {h.memo && <div className="fi-note">{h.memo}</div>}
                 </div>

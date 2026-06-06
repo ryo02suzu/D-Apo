@@ -102,12 +102,12 @@ textarea {
   background: var(--page);
 }
 
-/* header */
+/* header（モック .apphead: [左] [中央タイトル] [右]） */
 .apphead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 8px 14px 12px;
   color: var(--ink);
   position: sticky;
   top: 0;
@@ -118,21 +118,6 @@ textarea {
 .apphead .title {
   font-size: 17px;
   font-weight: 700;
-}
-.apphead .brand {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.apphead .brand .mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--teal);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 .ah-btn {
   background: none;
@@ -479,6 +464,22 @@ textarea {
   border-radius: 14px;
   padding: 15px 16px;
   transition: box-shadow 0.2s, border-color 0.2s;
+}
+.listcard.flash {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent);
+  animation: flashPop 0.5s;
+}
+@keyframes flashPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.015);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 .listcard .r1 {
   display: flex;
@@ -955,12 +956,7 @@ textarea {
   line-height: 1;
 }
 
-/* ───────── ヘッダのアバター/メニュー ───────── */
-.apphead .brand .title {
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-}
+/* ───────── ヘッダのメニュー（ハンバーガー） ───────── */
 .ah-menu-wrap {
   position: relative;
   display: flex;
@@ -1022,22 +1018,22 @@ textarea {
   color: var(--red);
 }
 
-/* ───────── presence ピル ───────── */
+/* ───────── presence ピル（モック .presence-row/.pill/.dot） ───────── */
 .presence-row {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 12px 0 2px;
+  padding: 6px 0 2px;
 }
 .presence-row .pill {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: #eef6f6;
-  border: 1px solid #d7e9e9;
+  background: var(--card);
+  border: 1px solid var(--line2);
   border-radius: 999px;
-  padding: 7px 12px;
-  font-size: 12.5px;
+  padding: 6px 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ink2);
   white-space: nowrap;
@@ -1046,30 +1042,74 @@ textarea {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--green);
+  background: var(--teal);
   flex: none;
-  box-shadow: 0 0 0 0 rgba(34, 177, 76, 0.5);
-  animation: pulse 1.8s infinite;
+  animation: pulse 1.6s infinite;
 }
 @keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(34, 177, 76, 0.45);
-  }
-  70% {
-    box-shadow: 0 0 0 7px rgba(34, 177, 76, 0);
-  }
+  0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(34, 177, 76, 0);
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
   }
 }
 
-.count-pill {
+/* ───────── トースト（同僚更新の通知 / モック .toast） ───────── */
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 28px);
+  max-width: 412px;
+  top: 60px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: #fff;
+  border: 1px solid var(--line2);
+  border-radius: 15px;
+  padding: 11px 14px;
+  box-shadow: 0 12px 30px rgba(20, 28, 36, 0.18);
+  animation: toastIn 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -16px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+.toast .t-body {
+  flex: 1;
+  min-width: 0;
+}
+.toast .t-body b {
+  display: block;
   font-size: 13px;
   font-weight: 700;
-  color: var(--teal);
-  background: var(--cyan-bg);
-  padding: 5px 11px;
-  border-radius: 999px;
+  color: var(--ink);
+}
+.toast .t-body span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toast .t-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+  animation: pulse 1.4s infinite;
 }
 
 /* ───────── ホーム：次に電話する医院カード ───────── */
@@ -1079,6 +1119,11 @@ textarea {
   align-items: center;
   margin-bottom: 12px;
   gap: 10px;
+}
+.clinic .row1 .ago {
+  font-size: 13px;
+  color: var(--muted2);
+  font-weight: 500;
 }
 .clinic .name {
   display: block;
@@ -1095,14 +1140,6 @@ textarea {
 }
 .clinic .tel {
   margin-top: 9px;
-}
-.owner-mini {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 13px;
-  color: var(--ink2);
-  font-weight: 600;
 }
 .memo-lbl {
   font-size: 12px;
@@ -1180,11 +1217,11 @@ textarea {
   background: var(--teal-d);
 }
 
-/* ───────── 履歴フィード ───────── */
+/* ───────── 履歴フィード（モック .feed/.feed-item） ───────── */
 .feed {
   display: flex;
   flex-direction: column;
-  padding: 8px 0 22px;
+  padding: 10px 0 18px;
 }
 .feed-item {
   display: flex;
@@ -1200,54 +1237,63 @@ textarea {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
 }
 .fi-top b {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
 }
 .fi-time {
   font-size: 12px;
   color: var(--muted2);
-  font-weight: 500;
+  font-weight: 600;
+  white-space: nowrap;
   flex: none;
 }
-.fi-cl {
+.fi-meta {
   display: flex;
   align-items: center;
   gap: 9px;
-  flex-wrap: wrap;
-  font-size: 13px;
-  color: var(--ink2);
+  margin-top: 7px;
+}
+.fi-who {
+  font-size: 12px;
+  color: var(--muted);
   font-weight: 600;
-  margin-top: 6px;
+  white-space: nowrap;
 }
 .fi-note {
-  font-size: 13.5px;
-  color: var(--muted);
-  margin-top: 6px;
+  font-size: 13px;
+  color: var(--ink2);
+  margin-top: 7px;
   font-weight: 500;
-  line-height: 1.6;
+  line-height: 1.55;
 }
 
-/* ───────── ダッシュボード ───────── */
+/* ───────── ダッシュボード（モック .dash-card 他） ───────── */
 .dash-card {
   background: var(--card);
-  border: 1px solid #e8ebed;
-  border-radius: 18px;
-  padding: 18px;
-  margin-top: 16px;
+  border: 1px solid var(--line2);
+  border-radius: 16px;
+  padding: 20px;
+  margin-top: 12px;
+}
+.dash-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
 }
 .dash-head h4 {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
+  white-space: nowrap;
 }
 .dash3,
 .dash2 {
   display: flex;
-  margin-top: 14px;
 }
 .dash3 .c,
 .dash2 .c {
@@ -1261,43 +1307,41 @@ textarea {
 }
 .dash3 .k,
 .dash2 .k {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
-  font-weight: 500;
+  font-weight: 600;
 }
 .dash3 .v,
 .dash2 .v {
-  font-size: 22px;
-  font-weight: 800;
+  font-size: 21px;
+  font-weight: 900;
   color: var(--ink);
-  margin-top: 5px;
+  margin-top: 7px;
   white-space: nowrap;
 }
 .dash3 .v small,
 .dash2 .v small {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--muted);
   margin-left: 1px;
 }
-.dash2 {
-  margin-top: 16px;
-}
 
 .cc-block {
-  margin-top: 24px;
+  margin-top: 20px;
+  padding-bottom: 8px;
 }
 .cc-block h2 {
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 .sumrow {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 12px 2px;
+  padding: 11px 0;
   font-size: 14px;
   border-bottom: 1px solid var(--line);
 }
@@ -1315,6 +1359,7 @@ textarea {
   margin-left: auto;
   font-weight: 800;
   color: var(--ink);
+  white-space: nowrap;
 }
 .sumrow .scount small {
   font-size: 11px;
@@ -1325,38 +1370,38 @@ textarea {
 .hbars {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 12px;
+  gap: 11px;
+  padding-top: 6px;
 }
 .hbar {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
 }
 .hbar .hb-label {
-  width: 84px;
+  width: 72px;
   flex: none;
+  font-size: 12px;
   color: var(--ink2);
   font-weight: 600;
 }
 .hbar .hb-track {
   flex: 1;
-  height: 10px;
+  height: 9px;
+  background: var(--line2);
   border-radius: 6px;
-  background: #e8ecee;
   overflow: hidden;
 }
 .hbar .hb-track i {
   display: block;
   height: 100%;
   border-radius: 6px;
-  transition: width 0.5s ease;
+  transition: width 0.5s;
 }
 .hbar .hb-num {
-  width: 26px;
+  width: 20px;
   text-align: right;
-  flex: none;
+  font-size: 13px;
   font-weight: 800;
   color: var(--ink);
 }

@@ -2,7 +2,6 @@
 // 設計書 §3: 医院詳細。基本情報＋発信ボタン＋ステータス変更＋
 // メモ付き架電結果フォーム＋過去履歴のタイムライン。
 // Dentia.html の .p3-top / .badges / .tabs / .timeline / .info-row に対応。
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar";
 import { CallLogForm } from "@/components/call-log-form";
@@ -39,14 +38,6 @@ export default async function ClinicDetailPage({
 
   return (
     <div className="pbody np">
-      <div className="apphead" style={{ margin: "0 -18px", borderBottom: "none" }}>
-        <Link href="/clinics" className="ah-btn">
-          <Icon name="chevL" />
-        </Link>
-        <span className="title" />
-        <span style={{ width: 34 }} />
-      </div>
-
       <div className="p3-top">
         <div className="name">{c.name}</div>
         {c.phone && (
@@ -100,11 +91,7 @@ export default async function ClinicDetailPage({
             {c.address && (
               <div className="info-row">
                 <span className="ik">住所</span>
-                <span className="iv">
-                  {c.prefecture}
-                  {c.city}
-                  {c.address}
-                </span>
+                <span className="iv">{c.address}</span>
               </div>
             )}
             {c.business_hours && (

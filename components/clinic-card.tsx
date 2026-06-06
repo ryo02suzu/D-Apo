@@ -1,12 +1,12 @@
 // components/clinic-card.tsx
-// 設計書 §3: 1医院のカード（Dentia.html の .listcard）。
-// 名前・ステータスバッジ・住所・電話・次回予定・営業時間バッジ・発信FAB。
+// 一覧の医院カード（モック .listcard）。
+// r1=Badge+「N分前更新/未架電」、名前、住所、電話、フッター（次回・担当者 + ミニ発信FAB）。
 import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { CallButton } from "@/components/call-button";
 import { Icon } from "@/components/icon";
-import { OpenStatusBadge } from "@/components/open-status-badge";
 import { StatusBadge } from "@/components/status-badge";
+import { fmtAgo } from "@/lib/time";
 import type { Clinic } from "@/lib/types";
 
 function formatNextAction(iso: string | null): string | null {
@@ -23,31 +23,21 @@ function formatNextAction(iso: string | null): string | null {
 export function ClinicCard({ clinic }: { clinic: Clinic }) {
   const next = formatNextAction(clinic.next_action_at);
   const tel = clinic.phone ? clinic.phone.replace(/[^\d+]/g, "") : "";
+  const ago =
+    clinic.status === "not_called"
+      ? "未架電"
+      : `${fmtAgo(clinic.updated_at)}更新`;
 
   return (
     <Link href={`/clinics/${clinic.id}`} className="listcard">
       <div className="r1">
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <StatusBadge status={clinic.status} />
-          <OpenStatusBadge hours={clinic.hours} />
-        </div>
-        {clinic.phone && !clinic.phone_verified && (
-          <span className="ago" style={{ color: "var(--amber-fg)" }}>
-            未確認
-          </span>
-        )}
-        {!clinic.phone && <span className="ago">番号なし</span>}
+        <StatusBadge status={clinic.status} />
+        <span className="ago">{ago}</span>
       </div>
 
       <div className="nm">{clinic.name}</div>
 
-      {clinic.address && (
-        <div className="ad">
-          {clinic.prefecture}
-          {clinic.city}
-          {clinic.address}
-        </div>
-      )}
+      {clinic.address && <div className="ad">{clinic.address}</div>}
 
       {clinic.phone && (
         <a
@@ -68,33 +58,27 @@ export function ClinicCard({ clinic }: { clinic: Clinic }) {
               次回 {next}
             </span>
           )}
-          {clinic.business_hours && (
+          <span>
+            {clinic.members ? (
+              <>
+                <Avatar
+                  name={clinic.members.name}
+                  color={clinic.members.color}
+                  size={16}
+                />
+                担当 {clinic.members.name}
+              </>
+            ) : (
+              <>
+                <Icon name="user" size={14} style={{ color: "var(--muted2)" }} />
+                未割当
+              </>
+            )}
+          </span>
+          {!clinic.phone && (
             <span>
-              <Icon name="clock" size={14} style={{ color: "var(--muted2)" }} />
-              {clinic.business_hours}
-            </span>
-          )}
-          {clinic.members && (
-            <span>
-              <Avatar
-                name={clinic.members.name}
-                color={clinic.members.color}
-                size={16}
-              />
-              担当 {clinic.members.name}
-            </span>
-          )}
-          {clinic.latest_memo && (
-            <span
-              style={{
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                maxWidth: "100%",
-              }}
-            >
-              <Icon name="chat" size={14} style={{ color: "var(--muted2)" }} />
-              {clinic.latest_memo}
+              <Icon name="phoneOff" size={14} style={{ color: "var(--muted2)" }} />
+              番号なし
             </span>
           )}
         </div>
