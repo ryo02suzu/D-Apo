@@ -41,16 +41,6 @@ export default async function ReviewPage() {
 
   return (
     <div className="pbody list-body">
-      <div
-        className="sec-head"
-        style={{ paddingTop: 16, marginBottom: 0 }}
-      >
-        <h3 style={{ fontSize: 18, fontWeight: 800 }}>電話番号の確認キュー</h3>
-        <Link href="/clinics" className="link">
-          一覧へ →
-        </Link>
-      </div>
-
       <p className="notice" style={{ marginTop: 14 }}>
         自動では判断できなかった候補です。正しい番号を選んで採用してください
         （座標と名称から算出した信頼度つき）。

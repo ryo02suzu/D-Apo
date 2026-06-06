@@ -9,6 +9,38 @@ import type { Clinic, ClinicStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+// 今週（月〜日, Asia/Tokyo）の範囲を "M/D〜M/D" で返す。
+function currentWeekRange(): string {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+  });
+  const parts = fmt.formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const y = Number(get("year"));
+  const m = Number(get("month"));
+  const d = Number(get("day"));
+  const wd = get("weekday"); // Sun, Mon, ...
+  const dayIdx = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(wd);
+  // 月曜起点のオフセット（日曜=6, 月曜=0）
+  const offsetToMon = (dayIdx + 6) % 7;
+  const tokyoMidnightUTC = Date.UTC(y, m - 1, d) - 9 * 3600 * 1000;
+  const monday = new Date(tokyoMidnightUTC - offsetToMon * 86400000);
+  const sunday = new Date(monday.getTime() + 6 * 86400000);
+  const md = (date: Date) => {
+    const p = new Intl.DateTimeFormat("ja-JP", {
+      timeZone: "Asia/Tokyo",
+      month: "numeric",
+      day: "numeric",
+    }).format(date);
+    return p.replace(/\//g, "/");
+  };
+  return `${md(monday)}〜${md(sunday)}`;
+}
+
 export default async function DashScreen() {
   const supabase = await createClient();
   const { data } = await supabase.from("clinics").select("status");
@@ -25,17 +57,14 @@ export default async function DashScreen() {
   const heardRate = called ? Math.round((heard / called) * 1000) / 10 : 0;
   const appoRate = called ? Math.round((appo / called) * 1000) / 10 : 0;
   const max = Math.max(...STATUS_ORDER.map((s) => counts[s]), 1);
+  const weekRange = currentWeekRange();
 
   return (
     <div className="pbody list-body">
-      <div className="sec-head" style={{ paddingTop: 14, marginBottom: 0 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 800 }}>進捗ダッシュボード</h3>
-      </div>
-
       {/* サマリーカード */}
       <div className="dash-card">
         <div className="dash-head">
-          <h4>全体の進捗（{total}件）</h4>
+          <h4>今週の進捗 ({weekRange})</h4>
         </div>
         <div className="dash3">
           <div className="c">
@@ -112,7 +141,7 @@ export default async function DashScreen() {
 
       {/* 横バー内訳 */}
       <div className="cc-block">
-        <h2>架電数の内訳</h2>
+        <h2>架電数の内訳（バー）</h2>
         <div className="hbars">
           {STATUS_ORDER.map((s) => (
             <div className="hbar" key={s}>

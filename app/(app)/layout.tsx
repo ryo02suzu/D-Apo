@@ -6,6 +6,8 @@ import { logout } from "@/app/(auth)/login/actions";
 import { AppHeader } from "@/components/app-header";
 import { MemberPicker } from "@/components/member-picker";
 import { MemberProvider } from "@/components/member-context";
+import { PresenceProvider } from "@/components/presence-provider";
+import { RealtimeToast } from "@/components/realtime-toast";
 import { TabBar } from "@/components/tab-bar";
 import {
   clearMember,
@@ -54,15 +56,18 @@ export default async function AppLayout({
     <MemberProvider
       member={{ id: member.id, name: member.name, color: member.color }}
     >
-      <div className="app-shell">
-        <AppHeader onLogout={logout} onChangeMember={clearMember} />
+      <PresenceProvider>
+        <div className="app-shell">
+          <AppHeader onLogout={logout} onChangeMember={clearMember} />
+          <RealtimeToast />
 
-        <main className="screen" style={{ paddingBottom: "92px" }}>
-          {children}
-        </main>
+          <main className="screen" style={{ paddingBottom: "92px" }}>
+            {children}
+          </main>
 
-        <TabBar nextHref={nextHref} />
-      </div>
+          <TabBar nextHref={nextHref} />
+        </div>
+      </PresenceProvider>
     </MemberProvider>
   );
 }

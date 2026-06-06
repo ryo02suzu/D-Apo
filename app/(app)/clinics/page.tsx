@@ -2,13 +2,14 @@
 // ホーム（HomeScreen / コールキュー）。
 // presence ピル + 今日の進捗(stat3+bar) + 次に電話する医院 + 今日の予定。
 import Link from "next/link";
-import { Avatar } from "@/components/avatar";
+import { CallPrimaryButton } from "@/components/call-primary-button";
 import { Icon } from "@/components/icon";
 import { PresencePills } from "@/components/presence-pills";
 import { StatusBadge } from "@/components/status-badge";
 import { nextToCall } from "@/lib/next-clinic";
 import { selectClinics } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
+import { fmtAgo } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default async function HomeScreen() {
 
   return (
     <div className="pbody">
-      <PresencePills activity="架電中" />
+      <PresencePills />
 
       {/* 今日の進捗 */}
       <div className="sec" style={{ paddingTop: 8 }}>
@@ -110,27 +111,16 @@ export default async function HomeScreen() {
           <>
             <div className="row1">
               <StatusBadge status={next.status} />
-              {next.members && (
-                <span className="owner-mini">
-                  <Avatar
-                    name={next.members.name}
-                    color={next.members.color}
-                    size={20}
-                  />
-                  {next.members.name}
-                </span>
-              )}
+              <span className="ago">
+                {next.status === "not_called"
+                  ? "未架電"
+                  : `${fmtAgo(next.updated_at)}更新`}
+              </span>
             </div>
             <Link href={`/clinics/${next.id}`} className="name">
               {next.name}
             </Link>
-            {next.address && (
-              <div className="addr">
-                {next.prefecture}
-                {next.city}
-                {next.address}
-              </div>
-            )}
+            {next.address && <div className="addr">{next.address}</div>}
             {next.phone && (
               <a className="tel" href={`tel:${nextTel}`}>
                 <Icon name="phone" size={16} style={{ color: "var(--muted)" }} />
@@ -143,14 +133,7 @@ export default async function HomeScreen() {
                 <div className="memo-tx">{next.latest_memo}</div>
               </>
             )}
-            <Link
-              href={`/clinics/${next.id}?tab=result`}
-              className="btn btn-primary"
-              style={{ marginTop: 18 }}
-            >
-              <Icon name="phone" fill size={22} style={{ color: "#fff" }} />
-              架電結果を入力
-            </Link>
+            <CallPrimaryButton clinicId={next.id} phone={next.phone} />
           </>
         ) : (
           <p className="empty">架電対象の医院がありません</p>
@@ -162,7 +145,7 @@ export default async function HomeScreen() {
       {/* 今日の予定 */}
       <div className="sec sched">
         <div className="sec-head">
-          <h3>今日の予定</h3>
+          <h3>次回予定</h3>
           <Link href="/clinics/list" className="link">
             すべて見る
           </Link>
