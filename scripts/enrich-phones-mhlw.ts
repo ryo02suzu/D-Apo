@@ -209,18 +209,18 @@ async function updatePhone(id: string, phone: string): Promise<void> {
 // ---- ナビイ検索（Playwright） --------------------------------------
 /** 院名でフリーワード検索し、結果一覧から詳細リンク候補を返す。 */
 async function searchSite(page: Page, name: string): Promise<{ name: string; href: string }[]> {
-  await page.goto(SEARCH_URL, { waitUntil: "networkidle", timeout: 60000 });
-  // 表示されている方の keyword 入力（#keyword1）に院名を入れて Enter 検索。
-  // Enter 送信と結果一覧（S2400）への遷移を Promise.all で同期させ、
-  // ナビゲーション直後の $$eval（context destroyed）を避ける。
+  // networkidle はこのサイト（常時通信）で最大60秒待ちになり激遅。
+  // domcontentloaded + 要素待ちにして高速化（1件あたり ~20s → ~3-5s）。
+  await page.goto(SEARCH_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.waitForSelector("#keyword1", { timeout: 15000 });
   await page.fill("#keyword1", searchName(name));
   await page.click("#keyword1");
   await Promise.all([
-    page.waitForURL(/S2400/, { timeout: 60000 }).catch(() => {}),
+    page.waitForURL(/S2400/, { timeout: 30000 }).catch(() => {}),
     page.keyboard.press("Enter"),
   ]);
-  await page.waitForLoadState("networkidle", { timeout: 60000 }).catch(() => {});
-  await page.waitForTimeout(1500);
+  // 結果リンクが出るまで待つ（無ければ短時間で諦める＝検索結果なし）
+  await page.waitForSelector("a[href*='S2430']", { timeout: 8000 }).catch(() => {});
   // 結果一覧（S2400）から S2430 詳細リンクを収集
   return page.$$eval("a[href*='S2430']", (els: Element[]) =>
     els.map((e) => ({
