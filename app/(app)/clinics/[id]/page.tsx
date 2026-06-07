@@ -6,6 +6,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { CallLogTimeline } from "@/components/call-log-timeline";
+import { ClinicBusyBadge } from "@/components/clinic-busy-badge";
 import { ClinicDetailTabs } from "@/components/clinic-detail-tabs";
 import { Icon } from "@/components/icon";
 import { PhoneEditor } from "@/components/phone-editor";
@@ -61,6 +62,8 @@ export default async function ClinicDetailPage({
         <StatusBadge status={c.status} />
         {ago && <span className="badge b-gray">{ago}更新</span>}
       </div>
+
+      <ClinicBusyBadge clinicId={c.id} />
 
       <ClinicDetailTabs
         defaultTab={tab === "info" ? "info" : "history"}

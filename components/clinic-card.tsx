@@ -9,6 +9,10 @@ import { StatusBadge } from "@/components/status-badge";
 import { fmtAgo } from "@/lib/time";
 import type { Clinic } from "@/lib/types";
 
+function firstName(name: string): string {
+  return (name ?? "").split(/[\s　]+/)[0] || name;
+}
+
 function formatNextAction(iso: string | null): string | null {
   if (!iso) return null;
   return new Intl.DateTimeFormat("ja-JP", {
@@ -20,7 +24,13 @@ function formatNextAction(iso: string | null): string | null {
   }).format(new Date(iso));
 }
 
-export function ClinicCard({ clinic }: { clinic: Clinic }) {
+export function ClinicCard({
+  clinic,
+  busyBy,
+}: {
+  clinic: Clinic;
+  busyBy?: { name: string; color: string } | null;
+}) {
   const next = formatNextAction(clinic.next_action_at);
   const tel = clinic.phone ? clinic.phone.replace(/[^\d+]/g, "") : "";
   const ago =
@@ -32,6 +42,12 @@ export function ClinicCard({ clinic }: { clinic: Clinic }) {
     <Link href={`/clinics/${clinic.id}`} className="listcard">
       <div className="r1">
         <StatusBadge status={clinic.status} />
+        {busyBy && (
+          <span className="busy">
+            <span className="dot" />
+            {firstName(busyBy.name)}さんが対応中
+          </span>
+        )}
         <span className="ago">{ago}</span>
       </div>
 
