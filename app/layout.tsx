@@ -21,6 +21,15 @@ export const metadata: Metadata = {
   title: "Dentia — 歯科医院 架電CRM",
   description:
     "歯科医院への架電業務を効率化する、少人数チーム向けの軽量CRM。Next.js + Supabase。",
+  appleWebApp: {
+    capable: true,
+    title: "Dentia",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

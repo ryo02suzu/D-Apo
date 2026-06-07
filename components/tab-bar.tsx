@@ -41,6 +41,7 @@ export function TabBar({ nextHref }: { nextHref: string }) {
           key={t.href}
           href={t.href}
           className={"tab" + (isActive(pathname, t.href) ? " on" : "")}
+          aria-current={isActive(pathname, t.href) ? "page" : undefined}
         >
           <Icon name={t.icon} size={22} />
           {t.label}
@@ -48,7 +49,7 @@ export function TabBar({ nextHref }: { nextHref: string }) {
       ))}
 
       <Link href={nextHref} className="tab fab">
-        <span className="fab-c">
+        <span className="fab-c" aria-hidden="true">
           <Icon name="phone" fill size={24} style={{ color: "#fff" }} />
         </span>
         次の医院
@@ -59,6 +60,7 @@ export function TabBar({ nextHref }: { nextHref: string }) {
           key={t.href}
           href={t.href}
           className={"tab" + (isActive(pathname, t.href) ? " on" : "")}
+          aria-current={isActive(pathname, t.href) ? "page" : undefined}
         >
           <Icon name={t.icon} size={22} />
           {t.label}
