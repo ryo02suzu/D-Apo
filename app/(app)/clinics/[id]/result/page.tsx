@@ -22,6 +22,36 @@ export default async function ClinicResultPage({
   const c = await selectClinic(supabase, id);
   if (!c) notFound();
 
+  // 「次に架電する医院」を決定（現在の医院は除外）。
+  // 未架電を最優先、無ければ折り返し対象（不通・担当者不在）。
+  // いずれも updated_at 昇順（＝最後に触れたのが古い順）で 1 件。
+  async function pickNextId(): Promise<string | null> {
+    const notCalled = await supabase
+      .from("clinics")
+      .select("id")
+      .neq("id", id)
+      .eq("status", "not_called")
+      .order("updated_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (notCalled.data?.id) return notCalled.data.id as string;
+
+    const followup = await supabase
+      .from("clinics")
+      .select("id")
+      .neq("id", id)
+      .in("status", ["no_answer", "unavailable"])
+      .order("updated_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (followup.data?.id) return followup.data.id as string;
+
+    return null;
+  }
+
+  const nextId = await pickNextId();
+  const nextHref = nextId ? `/clinics/${nextId}` : null;
+
   return (
     <ResultForm
       clinicId={c.id}
@@ -29,6 +59,7 @@ export default async function ClinicResultPage({
       phone={c.phone}
       currentStatus={c.status}
       memberId={member?.id ?? null}
+      nextHref={nextHref}
     />
   );
 }
