@@ -8,6 +8,7 @@ import { MemberPicker } from "@/components/member-picker";
 import { MemberProvider } from "@/components/member-context";
 import { PresenceProvider } from "@/components/presence-provider";
 import { RealtimeToast } from "@/components/realtime-toast";
+import { SwRegister } from "@/components/sw-register";
 import { TabBar } from "@/components/tab-bar";
 import {
   clearMember,
@@ -58,6 +59,7 @@ export default async function AppLayout({
     >
       <PresenceProvider>
         <div className="app-shell">
+          <SwRegister />
           <AppHeader onLogout={logout} onChangeMember={clearMember} />
           <RealtimeToast />
 

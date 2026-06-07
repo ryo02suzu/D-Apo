@@ -164,7 +164,7 @@ export function AppHeader({
         <button
           type="button"
           className="ah-btn"
-          aria-label="更新"
+          aria-label="再読み込み"
           onClick={() => router.refresh()}
         >
           <Icon name="refresh" />

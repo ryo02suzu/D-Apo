@@ -44,6 +44,7 @@ export function Icon({
   sw = 2,
   style,
   className,
+  ariaHidden = true,
 }: {
   name: string;
   size?: number;
@@ -51,6 +52,8 @@ export function Icon({
   sw?: number;
   style?: CSSProperties;
   className?: string;
+  /** 装飾アイコンは true（既定）。テキストラベルが別途あれば隠す。 */
+  ariaHidden?: boolean;
 }) {
   return (
     <svg
@@ -64,6 +67,8 @@ export function Icon({
       strokeLinejoin="round"
       style={{ display: "block", flex: "none", ...style }}
       className={className}
+      aria-hidden={ariaHidden ? "true" : undefined}
+      focusable="false"
       dangerouslySetInnerHTML={{ __html: ICON_PATHS[name] || "" }}
     />
   );
