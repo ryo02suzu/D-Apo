@@ -229,8 +229,13 @@ async function markNoHit(id: string): Promise<void> {
 async function searchSite(page: Page, name: string): Promise<{ name: string; href: string }[]> {
   // networkidle はこのサイト（常時通信）で最大60秒待ちになり激遅。
   // domcontentloaded + 要素待ちにして高速化（1件あたり ~20s → ~3-5s）。
-  await page.goto(SEARCH_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForSelector("#keyword1", { timeout: 15000 });
+  // 検索ページ自体が開けない＝ブロック/障害 → SEARCH_PAGE_FAILED で区別（呼び出し側で安全停止）。
+  try {
+    await page.goto(SEARCH_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.waitForSelector("#keyword1", { timeout: 15000 });
+  } catch {
+    throw new Error("SEARCH_PAGE_FAILED");
+  }
   await page.fill("#keyword1", searchName(name));
   await page.click("#keyword1");
   await Promise.all([
@@ -278,10 +283,11 @@ async function main() {
 
   const reports: Report[] = [];
   let okCount = 0; // 成功(電話取得)件数
-  let consecFail = 0; // 連続失敗数
+  let consecLoadFail = 0; // 検索ページ読込の連続失敗数（ブロック検知用）
 
   for (const clinic of clinics) {
     let report: Report = { ourName: clinic.name, matchedName: null, phone: null, confidence: "-", note: "" };
+    let pageFailed = false; // 検索ページが開けなかったか
     try {
       const candidates = await searchSite(page, clinic.name);
       await sleep(RATE_MS); // 検索後のレート制限
@@ -312,33 +318,39 @@ async function main() {
         }
       }
     } catch (e) {
-      report.note = `エラー: ${(e as Error).message}`;
+      const msg = (e as Error).message;
+      if (msg === "SEARCH_PAGE_FAILED") {
+        report.note = "検索ページ読込失敗";
+        pageFailed = true;
+      } else {
+        report.note = `エラー: ${msg}`;
+      }
     }
     reports.push(report);
     console.error(`  done: ${clinic.name} -> ${report.phone ?? "(なし)"} [${report.confidence}] ${report.note}`);
 
     if (report.phone) {
       okCount++;
-      consecFail = 0;
+      consecLoadFail = 0;
+    } else if (pageFailed) {
+      // 検索ページが開けない＝ブロック/障害の可能性。マークせず連続回数を数える。
+      consecLoadFail++;
+      if (consecLoadFail >= 20) {
+        console.error(
+          "\n⚠ 検索ページの読込が連続20回失敗。IPブロック/サイト障害の可能性が高いため、DB汚染を避けるため中断します。",
+        );
+        break;
+      }
     } else {
-      consecFail++;
-      // 検索が機能している（=一度でも成功した）ことを確認できてから「該当なし」を記録。
-      // これにより、IPブロック等で全件失敗する状況でDBを汚染しない。
-      if (commit && okCount > 0) {
+      // 検索ページは開けたが該当なし＝確定的な不一致 → 記録して次回スキップ
+      consecLoadFail = 0;
+      if (commit) {
         try {
           await markNoHit(clinic.id);
         } catch {
           /* マーク失敗は無視（次回再試行されるだけ） */
         }
       }
-    }
-
-    // サーキットブレーカ: 一度も成功せず連続失敗が続く＝IPブロック/サイト変化の可能性 → 安全停止
-    if (okCount === 0 && consecFail >= 40) {
-      console.error(
-        "\n⚠ 連続40件マッチなし＆成功0件。IPブロックまたはサイト変化の可能性が高いため、DB汚染を避けるため中断します。",
-      );
-      break;
     }
   }
 
