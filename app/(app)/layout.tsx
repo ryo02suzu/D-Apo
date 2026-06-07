@@ -17,9 +17,8 @@ import {
   listMembers,
   setMember,
 } from "@/lib/member";
-import { nextToCall } from "@/lib/next-clinic";
+import { fetchNextClinicId } from "@/lib/next-clinic";
 import { createClient } from "@/lib/supabase/server";
-import type { Clinic } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -44,14 +43,10 @@ export default async function AppLayout({
     );
   }
 
-  // 中央FABの遷移先（次に電話する医院）を算出
+  // 中央FABの遷移先（次に電話する医院）を軽量取得（limit 1）
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("clinics")
-    .select("id, status, updated_at")
-    .order("updated_at", { ascending: true });
-  const next = nextToCall((data ?? []) as Pick<Clinic, "id" | "status">[]);
-  const nextHref = next ? `/clinics/${next.id}` : "/clinics/list";
+  const nextId = await fetchNextClinicId(supabase);
+  const nextHref = nextId ? `/clinics/${nextId}` : "/clinics/list";
 
   return (
     <MemberProvider
