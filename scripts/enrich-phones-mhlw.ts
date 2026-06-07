@@ -45,7 +45,11 @@ const filterCity = getArg("city");
 const filterPref = getArg("prefecture");
 const allJapan = hasFlag("all");
 const scopeLabel = allJapan ? "全国" : (filterPref ?? filterCity ?? "新宿区");
-const limit = getArg("limit") ? Number(getArg("limit")) : 5;
+const limit = getArg("limit")
+  ? Number(getArg("limit"))
+  : allJapan || filterPref
+    ? 0 // 0 = 上限なし（全件処理）
+    : 5;
 const commit = hasFlag("commit");
 const dryRun = !commit; // 既定は dry-run
 
@@ -60,6 +64,26 @@ function norm(s: string): string {
     .replace(/[　・,，.．\-―ー－]/g, "")
     .toLowerCase()
     .trim();
+}
+
+/** 検索用に院名から法人格・先頭の括弧書きを除去（サイト検索のヒット率向上）。 */
+function searchName(s: string): string {
+  let t = (s || "").normalize("NFKC").trim();
+  // 先頭の括弧グループを繰り返し除去:（公社）（医） や (...)
+  for (let i = 0; i < 4; i++) {
+    const u = t.replace(/^[（(][^（）()]*[）)]\s*/, "").trim();
+    if (u === t) break;
+    t = u;
+  }
+  // 法人格の語を除去
+  t = t
+    .replace(
+      /(医療法人社団|医療法人財団|医療法人|社会医療法人|公益社団法人|一般社団法人|公益財団法人|一般財団法人|社会福祉法人|独立行政法人|国立大学法人)/g,
+      "",
+    )
+    .replace(/^[（(][^（）()]*[）)]\s*/, "")
+    .trim();
+  return t.length >= 2 ? t : (s || "").normalize("NFKC").trim();
 }
 
 type Confidence = "high" | "medium";
@@ -137,23 +161,34 @@ type ClinicRow = {
 };
 
 async function fetchClinics(): Promise<ClinicRow[]> {
-  const url = new URL(`${SUPABASE_URL}/rest/v1/clinics`);
-  url.searchParams.set("select", "id,name,address,city,external_id,phone");
-  if (allJapan) {
-    // 地域フィルタなし（全国）
-  } else if (filterPref) {
-    url.searchParams.set("prefecture", `eq.${filterPref}`);
-  } else {
-    url.searchParams.set("city", `eq.${filterCity ?? "新宿区"}`);
+  // PostgREST は 1 リクエスト最大 1000 行のため、offset でページングして
+  // phone 未登録の対象を全件読み込む（書き込み前の読み取りなので offset は安定）。
+  const PAGE = 1000;
+  const out: ClinicRow[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/clinics`);
+    url.searchParams.set("select", "id,name,address,city,external_id,phone");
+    if (allJapan) {
+      // 地域フィルタなし（全国）
+    } else if (filterPref) {
+      url.searchParams.set("prefecture", `eq.${filterPref}`);
+    } else {
+      url.searchParams.set("city", `eq.${filterCity ?? "新宿区"}`);
+    }
+    url.searchParams.set("phone", "is.null");
+    url.searchParams.set("order", "id.asc");
+    url.searchParams.set("limit", String(PAGE));
+    url.searchParams.set("offset", String(offset));
+    const res = await fetch(url.toString(), {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+    });
+    if (!res.ok) throw new Error(`Supabase fetch failed: ${res.status} ${await res.text()}`);
+    const rows = (await res.json()) as ClinicRow[];
+    out.push(...rows);
+    if (rows.length < PAGE) break;
+    if (limit > 0 && out.length >= limit) break;
   }
-  url.searchParams.set("phone", "is.null");
-  url.searchParams.set("order", "name.asc");
-  url.searchParams.set("limit", String(limit));
-  const res = await fetch(url.toString(), {
-    headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-  });
-  if (!res.ok) throw new Error(`Supabase fetch failed: ${res.status} ${await res.text()}`);
-  return (await res.json()) as ClinicRow[];
+  return limit > 0 ? out.slice(0, limit) : out;
 }
 
 async function updatePhone(id: string, phone: string): Promise<void> {
@@ -178,7 +213,7 @@ async function searchSite(page: Page, name: string): Promise<{ name: string; hre
   // 表示されている方の keyword 入力（#keyword1）に院名を入れて Enter 検索。
   // Enter 送信と結果一覧（S2400）への遷移を Promise.all で同期させ、
   // ナビゲーション直後の $$eval（context destroyed）を避ける。
-  await page.fill("#keyword1", name);
+  await page.fill("#keyword1", searchName(name));
   await page.click("#keyword1");
   await Promise.all([
     page.waitForURL(/S2400/, { timeout: 60000 }).catch(() => {}),
