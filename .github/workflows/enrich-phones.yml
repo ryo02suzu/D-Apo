@@ -1,0 +1,44 @@
+# 全国の歯科医院の電話番号を厚労省「医療情報ネット」から補完する手動ジョブ。
+# - 手動実行のみ（Actions画面 → Run workflow、または gh workflow run）。常時自動ではない。
+# - phone 未登録のみ処理＝再開可能。1回の実行で時間上限まで進み、残りは再実行で継続。
+# - レート約1req/s・識別可能UA（スクリプト側）。匿名キーはリポジトリ内設定を使用（Secret不要）。
+name: enrich-phones
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "対象スコープ"
+        type: choice
+        default: all
+        options: [all, prefecture, city]
+      value:
+        description: "scope=prefecture/city の時の値（例: 東京都 / 渋谷区）"
+        type: string
+        default: ""
+concurrency:
+  group: enrich-phones
+  cancel-in-progress: false
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Enrich phones
+        run: |
+          if [ "${{ inputs.scope }}" = "prefecture" ]; then
+            pnpm exec tsx scripts/enrich-phones-mhlw.ts --prefecture "${{ inputs.value }}" --commit
+          elif [ "${{ inputs.scope }}" = "city" ]; then
+            pnpm exec tsx scripts/enrich-phones-mhlw.ts --city "${{ inputs.value }}" --commit
+          else
+            pnpm exec tsx scripts/enrich-phones-mhlw.ts --all --commit
+          fi
