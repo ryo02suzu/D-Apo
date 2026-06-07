@@ -1,8 +1,8 @@
 // components/result-form.tsx
 // 設計書 §3 / モック ResultScreen の本文（.p2-name 以降）。
 // 結果ステータス選択 + メモ + 音声入力 + 「保存して次へ」。
-// 保存時は call_logs に insert し、clinics.status / latest_memo / assigned_to を同期。
-// （モックに無い next_action_at「次回予定」フィールドは持たない）
+// 保存時は call_logs に insert し、clinics.status / latest_memo / assigned_to / next_action_at を同期。
+// 保存後は「次の未架電医院」へ自動遷移する（nextHref）。
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
@@ -24,18 +24,30 @@ type SpeechRecognitionLike = {
   onend: (() => void) | null;
 };
 
+// メモのクイック挿入定型文（設計のメモバンクより）。
+const MEMO_TEMPLATES = [
+  "留守電。折り返し依頼を残した。",
+  "院長不在。改めて連絡。",
+  "受付対応。担当は午後在席とのこと。",
+  "新患集客に課題感あり。資料送付。",
+  "予約管理をExcel運用中。",
+  "現状システムで満足、今回は見送り。",
+];
+
 export function ResultForm({
   clinicId,
   clinicName,
   phone,
   currentStatus,
   memberId,
+  nextHref,
 }: {
   clinicId: string;
   clinicName: string;
   phone: string | null;
   currentStatus: ClinicStatus;
   memberId: string | null;
+  nextHref: string | null;
 }) {
   const router = useRouter();
   // モックと同様、未架電（not_called）のときは未選択スタート。
@@ -43,6 +55,7 @@ export function ResultForm({
     currentStatus === "not_called" ? null : currentStatus,
   );
   const [memo, setMemo] = useState("");
+  const [nextActionAt, setNextActionAt] = useState("");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -87,6 +100,14 @@ export function ResultForm({
     rec.start();
   }
 
+  // 定型文をメモへ追記（200字上限・既存内容があれば改行で区切る）。
+  function appendTemplate(text: string) {
+    setMemo((m) => {
+      const joined = m ? `${m}\n${text}` : text;
+      return joined.slice(0, 200);
+    });
+  }
+
   function save() {
     if (!sel) return;
     setError(null);
@@ -111,6 +132,9 @@ export function ResultForm({
         .update({
           status: sel,
           latest_memo: memo || null,
+          next_action_at: nextActionAt
+            ? new Date(nextActionAt).toISOString()
+            : null,
           ...(memberId ? { assigned_to: memberId } : {}),
         })
         .eq("id", clinicId);
@@ -119,11 +143,11 @@ export function ResultForm({
         return;
       }
 
+      // 保存成功を即時表示し、次の医院（無ければ現在の詳細）へ速やかに遷移。
       setSaved(true);
-      // モック同様、保存表示の後に詳細へ戻る。
+      const dest = nextHref ?? `/clinics/${clinicId}`;
       setTimeout(() => {
-        router.push(`/clinics/${clinicId}`);
-        router.refresh();
+        router.push(dest);
       }, 850);
     });
   }
@@ -180,6 +204,22 @@ export function ResultForm({
         <div className="ta-count">{memo.length}/200</div>
       </div>
 
+      <div className="tmpl-row">
+        <span className="tmpl-lbl">定型文</span>
+        <div className="chips tmpl-chips">
+          {MEMO_TEMPLATES.map((t) => (
+            <button
+              key={t}
+              type="button"
+              className="chip"
+              onClick={() => appendTemplate(t)}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <button
         type="button"
         className="btn btn-outline voice"
@@ -194,6 +234,14 @@ export function ResultForm({
         <Icon name="mic" size={18} />
         {listening ? "聞き取り中…" : "音声入力"}
       </button>
+
+      <div className="fld-lbl next-action-lbl">次回予定（任意）</div>
+      <input
+        type="datetime-local"
+        className="field"
+        value={nextActionAt}
+        onChange={(e) => setNextActionAt(e.target.value)}
+      />
 
       {error && (
         <p

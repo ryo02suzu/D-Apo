@@ -954,8 +954,28 @@ textarea {
   color: var(--muted2);
   font-weight: 500;
 }
+/* メモ定型文（クイック挿入チップ行） */
+.tmpl-row {
+  margin-top: 10px;
+}
+.tmpl-lbl {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.chips.tmpl-chips {
+  padding: 7px 0 2px;
+}
+.chips.tmpl-chips .chip {
+  font-size: 12px;
+  padding: 6px 12px;
+}
 .voice {
   margin-top: 14px;
+}
+/* 次回予定フィールドの間隔 */
+.fld-lbl.next-action-lbl {
+  margin-top: 18px;
 }
 .p2foot .cap {
   text-align: center;
