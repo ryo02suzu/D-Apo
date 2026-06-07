@@ -25,7 +25,7 @@
 
 // Playwright はグローバルインストール（/opt/node22/...）にあるため絶対パスで読み込む。
 // @ts-ignore  グローバルパス（/opt/node22/...）からの読み込みのため型解決はスキップ
-import { chromium, type Browser, type Page } from "/opt/node22/lib/node_modules/playwright/index.js";
+import { chromium, type Browser, type Page } from "playwright";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../lib/supabase/config";
 
 // ---- 定数 ----------------------------------------------------------
@@ -41,7 +41,10 @@ function getArg(name: string): string | undefined {
 }
 const hasFlag = (name: string) => process.argv.includes(`--${name}`);
 
-const filterCity = getArg("city") ?? "新宿区";
+const filterCity = getArg("city");
+const filterPref = getArg("prefecture");
+const allJapan = hasFlag("all");
+const scopeLabel = allJapan ? "全国" : (filterPref ?? filterCity ?? "新宿区");
 const limit = getArg("limit") ? Number(getArg("limit")) : 5;
 const commit = hasFlag("commit");
 const dryRun = !commit; // 既定は dry-run
@@ -136,7 +139,13 @@ type ClinicRow = {
 async function fetchClinics(): Promise<ClinicRow[]> {
   const url = new URL(`${SUPABASE_URL}/rest/v1/clinics`);
   url.searchParams.set("select", "id,name,address,city,external_id,phone");
-  url.searchParams.set("city", `eq.${filterCity}`);
+  if (allJapan) {
+    // 地域フィルタなし（全国）
+  } else if (filterPref) {
+    url.searchParams.set("prefecture", `eq.${filterPref}`);
+  } else {
+    url.searchParams.set("city", `eq.${filterCity ?? "新宿区"}`);
+  }
   url.searchParams.set("phone", "is.null");
   url.searchParams.set("order", "name.asc");
   url.searchParams.set("limit", String(limit));
@@ -204,7 +213,7 @@ type Report = {
 };
 
 async function main() {
-  console.log(`# MHLW ナビイ 電話番号補完  city=${filterCity} limit=${limit} ` + (dryRun ? "(DRY-RUN: 書き込みなし)" : "(COMMIT: 書き込みあり)"));
+  console.log(`# MHLW ナビイ 電話番号補完  scope=${scopeLabel} limit=${limit} ` + (dryRun ? "(DRY-RUN: 書き込みなし)" : "(COMMIT: 書き込みあり)"));
   console.log(`# レート制限: 約 ${(1000 / RATE_MS).toFixed(2)} req/sec / UA="${UA}"`);
 
   const clinics = await fetchClinics();
