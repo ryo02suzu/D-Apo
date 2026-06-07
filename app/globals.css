@@ -444,6 +444,85 @@ textarea {
   font-weight: 600;
   padding: 14px 2px 8px;
 }
+
+/* ビュー（クイックフィルタ）セグメント */
+.segviews {
+  padding-top: 9px;
+}
+.chip.segview {
+  background: var(--field);
+  color: var(--ink2);
+}
+.chip.segview.on {
+  background: var(--teal);
+  border-color: var(--teal);
+  color: #fff;
+}
+
+/* 件数 + 並び替え/CSV のツールバー行 */
+.list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 2px 8px;
+}
+.list-toolbar .list-count {
+  padding: 0;
+}
+.list-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.field.sort-field {
+  width: auto;
+  padding: 8px 30px 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink2);
+  cursor: pointer;
+  /* ネイティブの矢印を消してカスタム矢印を描画 */
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa4ae' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  transition: border-color 0.12s ease, transform 0.08s ease;
+}
+.field.sort-field:active {
+  transform: scale(0.97);
+}
+.csv-btn {
+  flex: none;
+  border: 1.5px solid var(--line2);
+  background: var(--field);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal);
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 0.08s ease, background-color 0.12s ease,
+    border-color 0.12s ease;
+}
+.csv-btn:active {
+  transform: scale(0.95);
+  background: color-mix(in srgb, var(--teal) 8%, var(--field));
+  border-color: color-mix(in srgb, var(--teal) 35%, var(--line2));
+}
+.csv-btn:disabled {
+  opacity: 0.5;
+  color: var(--muted2);
+}
+
+/* 無限スクロールの監視用センチネル */
+.list-sentinel {
+  height: 1px;
+}
 .cards {
   display: flex;
   flex-direction: column;
