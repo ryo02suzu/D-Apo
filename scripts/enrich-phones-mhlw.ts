@@ -176,6 +176,8 @@ async function fetchClinics(): Promise<ClinicRow[]> {
       url.searchParams.set("city", `eq.${filterCity ?? "新宿区"}`);
     }
     url.searchParams.set("phone", "is.null");
+    // 一度試して該当なしだった医院(phone_source='mhlw_nohit')は除外＝再処理しない
+    url.searchParams.set("phone_source", "is.null");
     url.searchParams.set("order", "id.asc");
     url.searchParams.set("limit", String(PAGE));
     url.searchParams.set("offset", String(offset));
@@ -204,6 +206,22 @@ async function updatePhone(id: string, phone: string): Promise<void> {
     body: JSON.stringify({ phone, phone_source: "mhlw", phone_verified: true }),
   });
   if (!res.ok) throw new Error(`Supabase update failed: ${res.status} ${await res.text()}`);
+}
+
+/** 試したが一致/電話なしだった医院を「確認済み(該当なし)」として記録し、次回の再処理を防ぐ。 */
+async function markNoHit(id: string): Promise<void> {
+  const url = `${SUPABASE_URL}/rest/v1/clinics?id=eq.${id}`;
+  const res = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=minimal",
+    },
+    body: JSON.stringify({ phone_source: "mhlw_nohit" }),
+  });
+  if (!res.ok) throw new Error(`Supabase markNoHit failed: ${res.status} ${await res.text()}`);
 }
 
 // ---- ナビイ検索（Playwright） --------------------------------------
@@ -259,6 +277,8 @@ async function main() {
   const page = await ctx.newPage();
 
   const reports: Report[] = [];
+  let okCount = 0; // 成功(電話取得)件数
+  let consecFail = 0; // 連続失敗数
 
   for (const clinic of clinics) {
     let report: Report = { ourName: clinic.name, matchedName: null, phone: null, confidence: "-", note: "" };
@@ -296,6 +316,30 @@ async function main() {
     }
     reports.push(report);
     console.error(`  done: ${clinic.name} -> ${report.phone ?? "(なし)"} [${report.confidence}] ${report.note}`);
+
+    if (report.phone) {
+      okCount++;
+      consecFail = 0;
+    } else {
+      consecFail++;
+      // 検索が機能している（=一度でも成功した）ことを確認できてから「該当なし」を記録。
+      // これにより、IPブロック等で全件失敗する状況でDBを汚染しない。
+      if (commit && okCount > 0) {
+        try {
+          await markNoHit(clinic.id);
+        } catch {
+          /* マーク失敗は無視（次回再試行されるだけ） */
+        }
+      }
+    }
+
+    // サーキットブレーカ: 一度も成功せず連続失敗が続く＝IPブロック/サイト変化の可能性 → 安全停止
+    if (okCount === 0 && consecFail >= 40) {
+      console.error(
+        "\n⚠ 連続40件マッチなし＆成功0件。IPブロックまたはサイト変化の可能性が高いため、DB汚染を避けるため中断します。",
+      );
+      break;
+    }
   }
 
   await browser.close();
