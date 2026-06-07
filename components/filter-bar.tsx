@@ -1,6 +1,8 @@
 // components/filter-bar.tsx
 // 一覧（ListScreen）の絞り込みバー（モック）。
-// 検索バー → エリアチップ行（全エリア + distinct city）→ ステータスチップ行。
+// 検索バー → ビュー（クイックフィルタ）→ エリアチップ行（全エリア + distinct city）
+//   → ステータスチップ行。
+// 並び替えは件数行（CSV出力の隣）に置く。
 // Dentia.html の .search-bar / .chips / .chip（配色付き）に対応。
 "use client";
 
@@ -9,10 +11,21 @@ import { Icon } from "@/components/icon";
 import { STATUS_COLOR, STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
 import type { Clinic, ClinicStatus } from "@/lib/types";
 
+/** クイックフィルタ（ビュー）。単一選択。 */
+export type ViewKey = "all" | "mine" | "follow" | "uncalled";
+
+export const VIEW_OPTIONS: { value: ViewKey; label: string }[] = [
+  { value: "all", label: "すべて" },
+  { value: "mine", label: "自分の担当" },
+  { value: "follow", label: "要フォロー" },
+  { value: "uncalled", label: "未架電" },
+];
+
 export type Filters = {
   q: string;
   city?: string;
   status?: ClinicStatus;
+  view: ViewKey;
 };
 
 export function FilterBar({
@@ -52,6 +65,22 @@ export function FilterBar({
             <Icon name="x" size={15} />
           </button>
         )}
+      </div>
+
+      {/* ビュー（クイックフィルタ）：単一選択のセグメント */}
+      <div className="chips segviews" role="tablist" aria-label="ビュー">
+        {VIEW_OPTIONS.map((v) => (
+          <button
+            key={v.value}
+            type="button"
+            role="tab"
+            aria-selected={filters.view === v.value}
+            className={"chip segview" + (filters.view === v.value ? " on" : "")}
+            onClick={() => onChange({ ...filters, view: v.value })}
+          >
+            {v.label}
+          </button>
+        ))}
       </div>
 
       {/* エリア チップ */}
