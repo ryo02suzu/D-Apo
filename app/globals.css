@@ -537,6 +537,68 @@ textarea {
   padding: 24px 0;
 }
 
+/* ───────── スワイプでアクション表示（一覧カード） ───────── */
+.swipe-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+}
+.swipe-actions {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 84px;
+  display: flex;
+  align-items: stretch;
+  z-index: 0;
+}
+.swipe-actions-left {
+  left: 0;
+}
+.swipe-actions-right {
+  right: 0;
+}
+.swipe-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: none;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.swipe-btn .swipe-label {
+  line-height: 1;
+}
+.swipe-call {
+  background: var(--green);
+}
+.swipe-result {
+  background: var(--teal);
+}
+.swipe-btn.is-disabled,
+.swipe-btn:disabled {
+  background: var(--line2);
+  color: var(--muted2);
+  cursor: not-allowed;
+}
+/* 前面：スライドするカード層 */
+.swipe-fore {
+  position: relative;
+  z-index: 1;
+  will-change: transform;
+}
+/* スワイプ層の中ではカードの押下スケールを無効化（変形が二重にならない） */
+.swipe-fore .listcard:active {
+  transform: none;
+}
+
 .listcard {
   display: block;
   background: var(--field);
