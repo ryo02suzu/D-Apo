@@ -26,6 +26,135 @@ export async function selectClinics(
   return (plain.data ?? []) as Clinic[];
 }
 
+/** 一覧ページのサーバー側フィルタ条件（searchParams 由来） */
+export type ClinicPageFilters = {
+  q?: string;
+  pref?: string;
+  city?: string;
+  status?: string;
+  /** ビュー: all | mine | follow | uncalled */
+  view?: string;
+  /** 並び替え: uncalled | next | updated | name */
+  sort?: string;
+  /** view=mine のときに使う現在メンバー id */
+  memberId?: string;
+};
+
+/** 要フォロー（ビュー）に含めるステータス */
+const FOLLOW_STATUSES = ["no_answer", "unavailable"];
+
+/** PostgREST の or() で使う ilike 値のエスケープ（% , を無害化） */
+function escapeIlike(value: string): string {
+  // カンマは or() の区切り、% は LIKE のワイルドカード。括弧も予約文字。
+  return value.replace(/[,()%]/g, (m) => (m === "%" ? "\\%" : " "));
+}
+
+/**
+ * 共通フィルタを Supabase クエリビルダに適用する。
+ * select() 済みのクエリ（list 用 / count 用）どちらにも使える。
+ */
+function applyClinicFilters<T>(query: T, f: ClinicPageFilters): T {
+  // PostgrestFilterBuilder はメソッドチェーンで自身（同型）を返すため any 経由で適用する。
+  // 型は呼び出し側の T を維持する。
+  let q = query as unknown as {
+    or: (s: string) => typeof q;
+    eq: (col: string, val: unknown) => typeof q;
+    ilike: (col: string, val: string) => typeof q;
+    in: (col: string, vals: unknown[]) => typeof q;
+  };
+  if (f.q) {
+    const v = escapeIlike(f.q);
+    q = q.or(`name.ilike.%${v}%,address.ilike.%${v}%`);
+  }
+  if (f.pref) q = q.eq("prefecture", f.pref);
+  if (f.city) q = q.ilike("city", `%${escapeIlike(f.city)}%`);
+  if (f.status) q = q.eq("status", f.status);
+
+  switch (f.view) {
+    case "mine":
+      q = q.eq("assigned_to", f.memberId ?? "");
+      break;
+    case "follow":
+      q = q.in("status", FOLLOW_STATUSES);
+      break;
+    case "uncalled":
+      q = q.eq("status", "not_called");
+      break;
+    default:
+      break;
+  }
+  return q as unknown as T;
+}
+
+/** 並び替えキー → order() 適用 */
+function applyClinicSort<T>(query: T, sort?: string): T {
+  const q = query as unknown as {
+    order: (
+      col: string,
+      opts: { ascending: boolean; nullsFirst?: boolean },
+    ) => T;
+  };
+  switch (sort) {
+    case "next":
+      return q.order("next_action_at", { ascending: true, nullsFirst: false });
+    case "name":
+      return q.order("name", { ascending: true });
+    case "updated":
+      return q.order("updated_at", { ascending: false });
+    case "uncalled":
+    default:
+      // SQL で not_called を先頭に固定するのは難しいため、既定は更新日時の降順。
+      return q.order("updated_at", { ascending: false });
+  }
+}
+
+/**
+ * 一覧の 1 ページ分を取得（担当者 members を embed、失敗時は embed なし）。
+ * count:"exact" で絞り込み後の総件数も返す。
+ */
+export async function selectClinicsPage(
+  supabase: DB,
+  opts: { filters: ClinicPageFilters; range: { from: number; to: number } },
+): Promise<{ rows: Clinic[]; count: number }> {
+  const { filters, range } = opts;
+
+  const build = (select: string) => {
+    let q = supabase.from("clinics").select(select, { count: "exact" });
+    q = applyClinicFilters(q, filters);
+    q = applyClinicSort(q, filters.sort);
+    return q.range(range.from, range.to);
+  };
+
+  const withEmbed = await build("*, members:assigned_to(name,color)");
+  if (!withEmbed.error) {
+    return {
+      rows: (withEmbed.data ?? []) as unknown as Clinic[],
+      count: withEmbed.count ?? 0,
+    };
+  }
+
+  const plain = await build("*");
+  return {
+    rows: (plain.data ?? []) as unknown as Clinic[],
+    count: plain.count ?? 0,
+  };
+}
+
+/**
+ * 任意のフィルタにマッチする件数だけを取得（head:true で行は読まない）。
+ */
+export async function countClinics(
+  supabase: DB,
+  filters: ClinicPageFilters = {},
+): Promise<number> {
+  let q = supabase
+    .from("clinics")
+    .select("id", { count: "exact", head: true });
+  q = applyClinicFilters(q, filters);
+  const { count } = await q;
+  return count ?? 0;
+}
+
 /** 単一医院（担当者 members を join、失敗時は embed なし） */
 export async function selectClinic(
   supabase: DB,

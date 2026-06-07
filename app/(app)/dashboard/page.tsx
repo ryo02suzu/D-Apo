@@ -6,18 +6,27 @@ import { DashboardActivity } from "@/components/dashboard-activity";
 import { Icon } from "@/components/icon";
 import { STATUS_COLOR, STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
 import { createClient } from "@/lib/supabase/server";
-import type { Clinic, ClinicStatus } from "@/lib/types";
+import type { ClinicStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashScreen() {
   const supabase = await createClient();
-  const { data } = await supabase.from("clinics").select("status");
-  const clinics = (data ?? []) as Pick<Clinic, "status">[];
+
+  // 全件を読まず、ステータスごとに COUNT クエリ（head:true）を並列実行（スケール対応）
+  const countResults = await Promise.all(
+    STATUS_ORDER.map((s) =>
+      supabase
+        .from("clinics")
+        .select("id", { count: "exact", head: true })
+        .eq("status", s),
+    ),
+  );
 
   const counts = {} as Record<ClinicStatus, number>;
-  for (const s of STATUS_ORDER) counts[s] = 0;
-  for (const c of clinics) counts[c.status] = (counts[c.status] ?? 0) + 1;
+  STATUS_ORDER.forEach((s, i) => {
+    counts[s] = countResults[i].count ?? 0;
+  });
 
   const max = Math.max(...STATUS_ORDER.map((s) => counts[s]), 1);
 
