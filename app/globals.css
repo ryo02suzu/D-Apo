@@ -335,10 +335,10 @@ textarea {
   width: 100%;
   max-width: 440px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-around;
   border-top: 1px solid var(--line);
-  padding: 7px 6px calc(11px + env(safe-area-inset-bottom));
+  padding: 6px 6px calc(10px + env(safe-area-inset-bottom));
   background: var(--page);
   z-index: 30;
 }
@@ -1212,22 +1212,23 @@ textarea {
 
 /* ───────── 下タブ：中央FAB ───────── */
 .tab.fab {
-  transform: translateY(-16px);
-  gap: 7px;
-  color: var(--ink2);
+  gap: 4px;
+  color: var(--muted2);
 }
 .fab-c {
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: var(--teal);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--teal) 32%, transparent);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--teal) 30%, transparent);
+  transition: transform 0.09s ease, background 0.15s;
 }
 .tab.fab:active .fab-c {
   background: var(--teal-d);
+  transform: scale(0.92);
 }
 
 /* ───────── 履歴フィード（モック .feed/.feed-item） ───────── */
@@ -1478,4 +1479,105 @@ textarea {
   display: flex;
   flex-direction: column;
   margin-top: 20px;
+}
+
+/* ───────── 押下フィードバック（タップ時のアクション） ───────── */
+.btn,
+.listcard,
+.chip,
+.tab,
+.sumrow,
+.feed-item,
+.sched .item,
+.picker-item,
+.stbtn,
+.ah-btn,
+.call-fab,
+.mini-fab,
+.link,
+.ttl-link,
+.map,
+.clinic .name {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* カード・行：軽く沈んで色が乗る */
+.listcard,
+.sumrow,
+.feed-item,
+.sched .item {
+  transition: transform 0.09s ease, background-color 0.13s ease,
+    box-shadow 0.13s ease;
+}
+.listcard:active,
+.sumrow:active,
+.feed-item:active,
+.sched .item:active {
+  transform: scale(0.985);
+  background: color-mix(in srgb, var(--teal) 7%, var(--page));
+}
+
+/* チップ */
+.chip {
+  transition: transform 0.08s ease, background-color 0.12s ease;
+}
+.chip:active {
+  transform: scale(0.94);
+}
+
+/* タブ（中央FAB以外） */
+.tab {
+  transition: transform 0.08s ease, color 0.12s ease;
+}
+.tab:not(.fab):active {
+  transform: scale(0.9);
+  color: var(--teal);
+}
+
+/* プライマリ/アウトラインボタン：押下で沈む */
+.btn:active {
+  transform: scale(0.96);
+}
+
+/* 丸い発信ボタン */
+.call-fab,
+.mini-fab {
+  transition: transform 0.09s ease, background 0.15s;
+}
+.call-fab:active,
+.mini-fab:active {
+  transform: scale(0.9);
+}
+
+/* ヘッダのアイコンボタン */
+.ah-btn {
+  transition: opacity 0.12s ease, transform 0.08s ease;
+}
+.ah-btn:active {
+  opacity: 0.5;
+  transform: scale(0.92);
+}
+
+/* テキストリンク */
+.link:active,
+.ttl-link:active {
+  opacity: 0.5;
+}
+
+/* 地図で開く */
+.map {
+  transition: transform 0.08s ease, background-color 0.12s ease;
+}
+.map:active {
+  transform: scale(0.99);
+  background: color-mix(in srgb, var(--teal) 7%, var(--page));
+}
+
+/* 医院名リンク（ホーム） */
+.clinic .name {
+  transition: opacity 0.12s ease;
+}
+.clinic .name:active {
+  opacity: 0.55;
 }
