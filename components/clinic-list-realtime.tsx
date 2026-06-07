@@ -5,7 +5,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ClinicCard } from "@/components/clinic-card";
+import { SwipeableCard } from "@/components/swipeable-card";
 import { FilterBar, type Filters, type ViewKey } from "@/components/filter-bar";
 import { useCurrentMember } from "@/components/member-context";
 import { usePresenceList } from "@/components/presence-provider";
@@ -178,6 +178,8 @@ export function ClinicListRealtime({
   });
   const [sort, setSort] = useState<SortKey>("uncalled");
   const [visible, setVisible] = useState(PAGE_SIZE);
+  // スワイプで開いているカード（一度に1枚だけ開く）
+  const [openId, setOpenId] = useState<string | null>(null);
 
   // 絞り込み（検索／エリア／ステータス／ビュー を AND 結合）
   const filtered = useMemo(
@@ -258,7 +260,13 @@ export function ClinicListRealtime({
 
       <div className="cards">
         {shown.map((c) => (
-          <ClinicCard key={c.id} clinic={c} busyBy={busyByClinic.get(c.id)} />
+          <SwipeableCard
+            key={c.id}
+            clinic={c}
+            busyBy={busyByClinic.get(c.id)}
+            openId={openId}
+            onOpen={setOpenId}
+          />
         ))}
         {total === 0 && <p className="empty">条件に合う医院がありません</p>}
         <div ref={sentinelRef} aria-hidden className="list-sentinel" />
