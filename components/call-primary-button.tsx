@@ -16,7 +16,7 @@ export function CallPrimaryButton({
   phone: string | null;
 }) {
   const router = useRouter();
-  const resultHref = `/clinics/${clinicId}?tab=result`;
+  const resultHref = `/clinics/${clinicId}/result`;
 
   if (!phone) {
     return (

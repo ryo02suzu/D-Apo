@@ -17,7 +17,7 @@ import { Avatar } from "@/components/avatar";
 import { Icon } from "@/components/icon";
 import { useCurrentMember } from "@/components/member-context";
 
-type LeftKind = "menu" | "back";
+type LeftKind = "menu" | "back" | "close";
 type RightKind = "bell" | "search" | "refresh" | null;
 
 type HeadSpec = {
@@ -25,6 +25,8 @@ type HeadSpec = {
   title: string;
   right: RightKind;
   backHref?: string;
+  /** タイトル右の .ttl-link テキストリンク（モック titleLink）。 */
+  titleLink?: { label: string; href: string };
 };
 
 function specFor(pathname: string): HeadSpec {
@@ -38,9 +40,25 @@ function specFor(pathname: string): HeadSpec {
     return { left: "menu", title: "進捗ダッシュボード", right: "refresh" };
   if (pathname === "/clinics/review")
     return { left: "back", title: "電話番号の確認", right: null, backHref: "/clinics" };
+  // /clinics/[id]/result（架電結果入力）
+  const resultMatch = pathname.match(/^\/clinics\/([^/]+)\/result$/);
+  if (resultMatch)
+    return {
+      left: "close",
+      title: "架電結果を入力",
+      right: null,
+      backHref: `/clinics/${resultMatch[1]}`,
+    };
   // /clinics/[id]（詳細）
-  if (/^\/clinics\/[^/]+$/.test(pathname))
-    return { left: "back", title: "", right: null, backHref: "/clinics/list" };
+  const detailMatch = pathname.match(/^\/clinics\/([^/]+)$/);
+  if (detailMatch)
+    return {
+      left: "back",
+      title: "",
+      right: null,
+      backHref: "/clinics/list",
+      titleLink: { label: "編集", href: `/clinics/${detailMatch[1]}?tab=info` },
+    };
   // フォールバック
   return { left: "menu", title: "コールキュー", right: "bell" };
 }
@@ -77,13 +95,13 @@ export function AppHeader({
   return (
     <header className="apphead">
       {/* 左ボタン */}
-      {spec.left === "back" ? (
+      {spec.left === "back" || spec.left === "close" ? (
         <Link
           href={spec.backHref ?? "/clinics"}
           className="ah-btn"
-          aria-label="戻る"
+          aria-label={spec.left === "close" ? "閉じる" : "戻る"}
         >
-          <Icon name="chevL" />
+          <Icon name={spec.left === "close" ? "x" : "chevL"} />
         </Link>
       ) : (
         <div className="ah-menu-wrap" ref={ref}>
@@ -138,7 +156,11 @@ export function AppHeader({
       <span className="title">{spec.title}</span>
 
       {/* 右ボタン */}
-      {spec.right === "refresh" ? (
+      {spec.titleLink ? (
+        <Link href={spec.titleLink.href} className="ah-btn ttl-link">
+          {spec.titleLink.label}
+        </Link>
+      ) : spec.right === "refresh" ? (
         <button
           type="button"
           className="ah-btn"
