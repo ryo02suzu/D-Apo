@@ -6,10 +6,11 @@ import { CallPrimaryButton } from "@/components/call-primary-button";
 import { Icon } from "@/components/icon";
 import { PresencePills } from "@/components/presence-pills";
 import { StatusBadge } from "@/components/status-badge";
-import { nextToCall } from "@/lib/next-clinic";
-import { selectClinics } from "@/lib/queries";
+import { fetchNextClinicId } from "@/lib/next-clinic";
+import { selectClinic } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { fmtAgo } from "@/lib/time";
+import type { Clinic } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -25,32 +26,41 @@ function formatSchedule(iso: string): string {
 
 export default async function HomeScreen() {
   const supabase = await createClient();
-  const clinics = await selectClinics(supabase, {
-    order: { column: "updated_at", ascending: true },
-  });
+
+  // 318件を毎回読まず、軽量クエリを並列実行（体感速度の改善）
+  const [statusRes, nextId, schedRes] = await Promise.all([
+    // 進捗集計用：status だけ（軽量）
+    supabase.from("clinics").select("status"),
+    // 次に電話する医院の id（limit 1）
+    fetchNextClinicId(supabase),
+    // 次回予定：next_action_at がある医院を近い順に最大8件
+    supabase
+      .from("clinics")
+      .select("id,name,status,next_action_at")
+      .not("next_action_at", "is", null)
+      .order("next_action_at", { ascending: true })
+      .limit(8),
+  ]);
 
   // 進捗集計
-  const total = clinics.length;
-  const called = clinics.filter((c) => c.status !== "not_called").length;
-  const heard = clinics.filter(
+  const statuses = (statusRes.data ?? []) as Pick<Clinic, "status">[];
+  const total = statuses.length;
+  const called = statuses.filter((c) => c.status !== "not_called").length;
+  const heard = statuses.filter(
     (c) => c.status === "heard" || c.status === "appointment",
   ).length;
-  const appo = clinics.filter((c) => c.status === "appointment").length;
+  const appo = statuses.filter((c) => c.status === "appointment").length;
   const heardRate = called ? Math.round((heard / called) * 1000) / 10 : 0;
 
-  // 次に電話する医院
-  const next = nextToCall(clinics);
+  // 次に電話する医院（1件のみ取得）
+  const next = nextId ? await selectClinic(supabase, nextId) : null;
   const nextTel = next?.phone ? next.phone.replace(/[^\d+]/g, "") : "";
 
-  // 今日の予定：next_action_at がある医院を近い順に
-  const schedule = clinics
-    .filter((c) => c.next_action_at)
-    .sort(
-      (a, b) =>
-        new Date(a.next_action_at!).getTime() -
-        new Date(b.next_action_at!).getTime(),
-    )
-    .slice(0, 8);
+  // 次回予定
+  const schedule = (schedRes.data ?? []) as Pick<
+    Clinic,
+    "id" | "name" | "status" | "next_action_at"
+  >[];
 
   return (
     <div className="pbody">
