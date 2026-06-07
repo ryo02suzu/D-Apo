@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ClinicCard } from "@/components/clinic-card";
 import { FilterBar, type Filters, type ViewKey } from "@/components/filter-bar";
 import { useCurrentMember } from "@/components/member-context";
+import { usePresenceList } from "@/components/presence-provider";
 import { useRealtimeClinics } from "@/hooks/use-realtime-clinics";
 import { STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
 import type { Clinic, ClinicStatus } from "@/lib/types";
@@ -155,6 +156,19 @@ export function ClinicListRealtime({
   // Provider 配下では非 null。万一に備えて id をガード（空文字なら mine は0件）。
   const memberId = member?.id ?? "";
 
+  // 重複架電防止：各医院を「自分以外の誰か」が対応中なら、その人を引けるマップ。
+  const present = usePresenceList();
+  const busyByClinic = useMemo(() => {
+    const map = new Map<string, { name: string; color: string }>();
+    for (const p of present) {
+      if (p.id === memberId || !p.clinicId) continue;
+      if (!map.has(p.clinicId)) {
+        map.set(p.clinicId, { name: p.name, color: p.color });
+      }
+    }
+    return map;
+  }, [present, memberId]);
+
   const [filters, setFilters] = useState<Filters>({
     q: "",
     view: "all",
@@ -244,7 +258,7 @@ export function ClinicListRealtime({
 
       <div className="cards">
         {shown.map((c) => (
-          <ClinicCard key={c.id} clinic={c} />
+          <ClinicCard key={c.id} clinic={c} busyBy={busyByClinic.get(c.id)} />
         ))}
         {total === 0 && <p className="empty">条件に合う医院がありません</p>}
         <div ref={sentinelRef} aria-hidden className="list-sentinel" />

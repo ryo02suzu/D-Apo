@@ -1168,6 +1168,31 @@ textarea {
   }
 }
 
+/* ───────── 重複架電の防止表示「○○さんが対応中」 ───────── */
+.busy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--amber) 14%, #fff);
+  color: var(--amber-fg);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.busy .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--amber-fg);
+  flex: none;
+  animation: pulse 1.6s infinite;
+}
+.busy-row {
+  margin-top: 8px;
+}
+
 /* ───────── トースト（同僚更新の通知 / モック .toast） ───────── */
 .toast {
   position: fixed;
@@ -1438,6 +1463,47 @@ textarea {
   font-weight: 700;
   color: var(--muted);
   margin-left: 1px;
+}
+
+/* 担当者別成績（.mstats） */
+.mstats {
+  background: var(--card);
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.mstat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+}
+.mstat + .mstat {
+  border-top: 1px solid var(--line2);
+}
+.mstat .ms-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mstat .ms-num {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink);
+  white-space: nowrap;
+  min-width: 56px;
+  text-align: right;
+}
+.mstat .ms-num small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-left: 2px;
 }
 
 .cc-block {

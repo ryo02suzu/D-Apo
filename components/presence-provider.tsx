@@ -15,6 +15,7 @@ export type PresenceMember = {
   name: string;
   color: string;
   activity: string;
+  clinicId: string | null;
 };
 
 type PresencePayload = PresenceMember;
@@ -31,10 +32,24 @@ function activityFor(pathname: string): string {
   return "オンライン";
 }
 
+/**
+ * 現在のルート → 対応中の医院ID。
+ * /clinics/{id} または /clinics/{id}/result の {id}。
+ * /clinics/list・/clinics/review は除外（null）。
+ */
+function clinicIdFor(pathname: string): string | null {
+  const m = pathname.match(/^\/clinics\/([^/]+)(?:\/result)?$/);
+  if (!m) return null;
+  const id = m[1];
+  if (id === "list" || id === "review") return null;
+  return id;
+}
+
 export function PresenceProvider({ children }: { children: React.ReactNode }) {
   const me = useCurrentMember();
   const pathname = usePathname();
   const activity = activityFor(pathname);
+  const clinicId = clinicIdFor(pathname);
   const [present, setPresent] = useState<PresenceMember[]>([]);
 
   useEffect(() => {
@@ -56,6 +71,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
             name: meta.name ?? "",
             color: meta.color ?? "#0c8c8b",
             activity: meta.activity ?? "オンライン",
+            clinicId: meta.clinicId ?? null,
           });
         }
         setPresent(list);
@@ -67,6 +83,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
             name: me.name,
             color: me.color,
             activity,
+            clinicId,
           });
         }
       });
@@ -74,7 +91,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [me.id, me.name, me.color, activity]);
+  }, [me.id, me.name, me.color, activity, clinicId]);
 
   return (
     <PresenceContext.Provider value={present}>
@@ -86,4 +103,16 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
 /** present メンバー一覧（自分含む）。 */
 export function usePresenceList(): PresenceMember[] {
   return useContext(PresenceContext);
+}
+
+/**
+ * 指定医院を対応中の「自分以外の最初のメンバー」を返す（重複架電防止表示用）。
+ * 該当が無ければ null。
+ */
+export function usePresenceForClinic(clinicId: string): PresenceMember | null {
+  const present = usePresenceList();
+  const me = useCurrentMember();
+  return (
+    present.find((p) => p.id !== me.id && p.clinicId === clinicId) ?? null
+  );
 }
