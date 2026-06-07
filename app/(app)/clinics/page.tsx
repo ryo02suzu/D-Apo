@@ -27,10 +27,32 @@ function formatSchedule(iso: string): string {
 export default async function HomeScreen() {
   const supabase = await createClient();
 
-  // 318件を毎回読まず、軽量クエリを並列実行（体感速度の改善）
-  const [statusRes, nextId, schedRes] = await Promise.all([
-    // 進捗集計用：status だけ（軽量）
-    supabase.from("clinics").select("status"),
+  // 全件を読まず、COUNT クエリ（head:true）で進捗集計を並列実行（53k 件でもスケール）
+  const [
+    totalRes,
+    calledRes,
+    heardRes,
+    appoRes,
+    nextId,
+    schedRes,
+  ] = await Promise.all([
+    // 総件数
+    supabase.from("clinics").select("id", { count: "exact", head: true }),
+    // 架電済み（未架電以外）
+    supabase
+      .from("clinics")
+      .select("id", { count: "exact", head: true })
+      .neq("status", "not_called"),
+    // ヒアリング＋アポ
+    supabase
+      .from("clinics")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["heard", "appointment"]),
+    // アポ獲得
+    supabase
+      .from("clinics")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "appointment"),
     // 次に電話する医院の id（limit 1）
     fetchNextClinicId(supabase),
     // 次回予定：next_action_at がある医院を近い順に最大8件
@@ -42,14 +64,11 @@ export default async function HomeScreen() {
       .limit(8),
   ]);
 
-  // 進捗集計
-  const statuses = (statusRes.data ?? []) as Pick<Clinic, "status">[];
-  const total = statuses.length;
-  const called = statuses.filter((c) => c.status !== "not_called").length;
-  const heard = statuses.filter(
-    (c) => c.status === "heard" || c.status === "appointment",
-  ).length;
-  const appo = statuses.filter((c) => c.status === "appointment").length;
+  // 進捗集計（COUNT 結果）
+  const total = totalRes.count ?? 0;
+  const called = calledRes.count ?? 0;
+  const heard = heardRes.count ?? 0;
+  const appo = appoRes.count ?? 0;
   const heardRate = called ? Math.round((heard / called) * 1000) / 10 : 0;
 
   // 次に電話する医院（1件のみ取得）

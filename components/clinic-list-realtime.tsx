@@ -1,17 +1,20 @@
 // components/clinic-list-realtime.tsx
-// 一覧（ListScreen）。Server Component の初期データを受け取り Realtime 購読しつつ、
-// 絞り込み・並び替え・無限スクロール・CSV出力をクライアント側の派生計算で行う。
-// モック ListScreen に合わせ FilterBar（検索＋ビュー＋エリア＋ステータス）＋件数＋カードリスト。
+// 一覧（ListScreen）。サーバーが取得した1ページ目（initial）＋総件数（total）＋
+// フィルタ（searchParams 由来）を受け取り、以降は anon ブラウザクライアントで
+// 同じ条件のまま次ページを追加読み込みする（サーバー側フィルタ＆ページング）。
+// 絞り込み・検索・並び替え・ビューの変更は URL へ反映し、サーバーが1ページ目を再取得する。
+// Realtime 購読・スワイプ・対応中バッジ・CSV はそのまま維持。
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { SwipeableCard } from "@/components/swipeable-card";
 import { FilterBar, type Filters, type ViewKey } from "@/components/filter-bar";
 import { useCurrentMember } from "@/components/member-context";
 import { usePresenceList } from "@/components/presence-provider";
-import { useRealtimeClinics } from "@/hooks/use-realtime-clinics";
-import { STATUS_LABEL, STATUS_ORDER } from "@/lib/status";
-import type { Clinic, ClinicStatus } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
+import { STATUS_LABEL } from "@/lib/status";
+import type { Clinic } from "@/lib/types";
 
 /** 並び替えキー */
 type SortKey = "uncalled" | "next" | "updated" | "name";
@@ -23,57 +26,64 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: "name", label: "名前順" },
 ];
 
-const PAGE_SIZE = 40;
+/** 1ページの件数（サーバー側ページング） */
+const PAGE = 50;
+/** CSV 出力の安全上限（これ以上は出力しない） */
+const CSV_CAP = 5000;
 
-/** 要フォロー（ビュー）に含めるステータス */
-const FOLLOW_STATUSES: ClinicStatus[] = ["no_answer", "unavailable"];
+const VIEW_KEYS: ViewKey[] = ["all", "mine", "follow", "uncalled"];
+const SORT_KEYS: SortKey[] = ["uncalled", "next", "updated", "name"];
 
-function matchesView(c: Clinic, view: ViewKey, memberId: string): boolean {
-  switch (view) {
-    case "mine":
-      return c.assigned_to === memberId;
-    case "follow":
-      return FOLLOW_STATUSES.includes(c.status);
-    case "uncalled":
-      return c.status === "not_called";
-    case "all":
-    default:
-      return true;
-  }
+/** PostgREST or() の ilike 値エスケープ（lib/queries.ts と同等） */
+function escapeIlike(value: string): string {
+  return value.replace(/[,()%]/g, (m) => (m === "%" ? "\\%" : " "));
 }
 
-function compareClinics(a: Clinic, b: Clinic, sort: SortKey): number {
-  switch (sort) {
-    case "next": {
-      // next_action_at 昇順、null は最後
-      const an = a.next_action_at;
-      const bn = b.next_action_at;
-      if (an === bn) return 0;
-      if (!an) return 1;
-      if (!bn) return -1;
-      return an < bn ? -1 : an > bn ? 1 : 0;
-    }
-    case "updated":
-      // updated_at 降順
-      return a.updated_at < b.updated_at
-        ? 1
-        : a.updated_at > b.updated_at
-          ? -1
-          : 0;
-    case "name":
-      return a.name.localeCompare(b.name, "ja");
+/** 現在のフィルタを Supabase クエリへ適用（ブラウザクライアント用・load more / CSV 共用） */
+function buildQuery(
+  supabase: ReturnType<typeof createClient>,
+  filters: Filters,
+  memberId: string,
+  select: string,
+) {
+  let q = supabase.from("clinics").select(select);
+  if (filters.q) {
+    const v = escapeIlike(filters.q);
+    q = q.or(`name.ilike.%${v}%,address.ilike.%${v}%`);
+  }
+  if (filters.pref) q = q.eq("prefecture", filters.pref);
+  if (filters.city) q = q.ilike("city", `%${escapeIlike(filters.city)}%`);
+  if (filters.status) q = q.eq("status", filters.status);
+  switch (filters.view) {
+    case "mine":
+      q = q.eq("assigned_to", memberId);
+      break;
+    case "follow":
+      q = q.in("status", ["no_answer", "unavailable"]);
+      break;
     case "uncalled":
-    default: {
-      // 未架電を先頭、その後 updated_at 降順
-      const ua = a.status === "not_called" ? 0 : 1;
-      const ub = b.status === "not_called" ? 0 : 1;
-      if (ua !== ub) return ua - ub;
-      return a.updated_at < b.updated_at
-        ? 1
-        : a.updated_at > b.updated_at
-          ? -1
-          : 0;
-    }
+      q = q.eq("status", "not_called");
+      break;
+    default:
+      break;
+  }
+  return q;
+}
+
+function applySort(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  q: any,
+  sort: SortKey,
+) {
+  switch (sort) {
+    case "next":
+      return q.order("next_action_at", { ascending: true, nullsFirst: false });
+    case "name":
+      return q.order("name", { ascending: true });
+    case "updated":
+    case "uncalled":
+    default:
+      return q.order("updated_at", { ascending: false });
   }
 }
 
@@ -97,7 +107,7 @@ function formatNextActionForCsv(iso: string | null): string {
   }).format(new Date(iso));
 }
 
-function exportCsv(clinics: Clinic[]): void {
+function downloadCsv(clinics: Clinic[]): void {
   const header = [
     "医院名",
     "電話番号",
@@ -146,15 +156,33 @@ function exportCsv(clinics: Clinic[]): void {
 
 export function ClinicListRealtime({
   initial,
-  initialStatus,
+  total,
+  filters,
 }: {
   initial: Clinic[];
-  initialStatus?: string;
+  total: number;
+  filters: Filters & { sort: SortKey };
 }) {
-  const { clinics } = useRealtimeClinics(initial);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const member = useCurrentMember();
-  // Provider 配下では非 null。万一に備えて id をガード（空文字なら mine は0件）。
   const memberId = member?.id ?? "";
+
+  const [supabase] = useState(() => createClient());
+
+  // 現在ロード済みの行。サーバーから来た1ページ目で初期化し、
+  // initial（=フィルタ変更による再取得）が差し替わったら追従する。
+  const [rows, setRows] = useState<Clinic[]>(initial);
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
+    setRows(initial);
+  }
+
+  const [loading, setLoading] = useState(false);
+  const [csvBusy, setCsvBusy] = useState(false);
+  // スワイプで開いているカード（一度に1枚だけ開く）
+  const [openId, setOpenId] = useState<string | null>(null);
 
   // 重複架電防止：各医院を「自分以外の誰か」が対応中なら、その人を引けるマップ。
   const present = usePresenceList();
@@ -169,76 +197,159 @@ export function ClinicListRealtime({
     return map;
   }, [present, memberId]);
 
-  const [filters, setFilters] = useState<Filters>({
-    q: "",
-    view: "all",
-    status: STATUS_ORDER.includes(initialStatus as ClinicStatus)
-      ? (initialStatus as ClinicStatus)
-      : undefined,
-  });
-  const [sort, setSort] = useState<SortKey>("uncalled");
-  const [visible, setVisible] = useState(PAGE_SIZE);
-  // スワイプで開いているカード（一度に1枚だけ開く）
-  const [openId, setOpenId] = useState<string | null>(null);
-
-  // 絞り込み（検索／エリア／ステータス／ビュー を AND 結合）
-  const filtered = useMemo(
-    () =>
-      clinics.filter(
-        (c) =>
-          (!filters.q ||
-            c.name.includes(filters.q) ||
-            (c.address ?? "").includes(filters.q)) &&
-          (!filters.city || c.city === filters.city) &&
-          (!filters.status || c.status === filters.status) &&
-          matchesView(c, filters.view, memberId),
-      ),
-    [clinics, filters, memberId],
+  // URL へフィルタを反映（サーバーが1ページ目を再取得 → initial 差し替え）
+  const updateUrl = useCallback(
+    (patch: Partial<Filters & { sort: SortKey }>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      const setOrDelete = (key: string, value?: string) => {
+        if (value) params.set(key, value);
+        else params.delete(key);
+      };
+      if ("q" in patch) setOrDelete("q", patch.q);
+      if ("pref" in patch) setOrDelete("pref", patch.pref);
+      if ("city" in patch) setOrDelete("city", patch.city);
+      if ("status" in patch) setOrDelete("status", patch.status);
+      if ("view" in patch)
+        setOrDelete("view", patch.view === "all" ? undefined : patch.view);
+      if ("sort" in patch)
+        setOrDelete(
+          "sort",
+          patch.sort === "uncalled" ? undefined : patch.sort,
+        );
+      router.replace(`/clinics/list?${params.toString()}`);
+    },
+    [router, searchParams],
   );
 
-  // 並び替え
-  const sorted = useMemo(() => {
-    const arr = [...filtered];
-    arr.sort((a, b) => compareClinics(a, b, sort));
-    return arr;
-  }, [filtered, sort]);
-
-  // 絞り込み／並び替え／検索が変わったら表示件数をリセット
+  // Realtime：ロード済みの行だけ差分反映（範囲外の INSERT などは無視）
   useEffect(() => {
-    setVisible(PAGE_SIZE);
-  }, [filters, sort]);
+    const channel = supabase
+      .channel("clinics-changes")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "clinics" },
+        (payload) => {
+          setRows((prev) => {
+            if (payload.eventType === "UPDATE") {
+              const next = payload.new as Clinic;
+              return prev.map((c) =>
+                c.id === next.id ? { ...c, ...next } : c,
+              );
+            }
+            if (payload.eventType === "DELETE") {
+              const old = payload.old as Clinic;
+              return prev.filter((c) => c.id !== old.id);
+            }
+            // INSERT は現在のフィルタ/ページ範囲に属するか不明なので無視。
+            return prev;
+          });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
-  // 無限スクロール：sentinel が見えたら +PAGE_SIZE
+  // 追加読み込み：次の PAGE 件を同条件で取得して末尾に追加
+  const loadMore = useCallback(async () => {
+    if (loading || rows.length >= total) return;
+    setLoading(true);
+    try {
+      const from = rows.length;
+      const to = from + PAGE - 1;
+      let q = buildQuery(
+        supabase,
+        filters,
+        memberId,
+        "*, members:assigned_to(name,color)",
+      );
+      q = applySort(q, filters.sort);
+      let res = await q.range(from, to);
+      if (res.error) {
+        // embed 失敗時は embed なしで再試行
+        let q2 = buildQuery(supabase, filters, memberId, "*");
+        q2 = applySort(q2, filters.sort);
+        res = await q2.range(from, to);
+      }
+      const more = (res.data ?? []) as unknown as Clinic[];
+      if (more.length > 0) {
+        setRows((prev) => {
+          const seen = new Set(prev.map((c) => c.id));
+          const add = more.filter((c) => !seen.has(c.id));
+          return add.length ? [...prev, ...add] : prev;
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, rows.length, total, supabase, filters, memberId]);
+
+  // 無限スクロール：sentinel が見えたら次ページ
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const total = sorted.length;
+  const hasMore = rows.length < total;
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el) return;
+    if (!el || !hasMore) return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setVisible((v) => (v < total ? v + PAGE_SIZE : v));
-        }
+        if (entries.some((e) => e.isIntersecting)) void loadMore();
       },
       { rootMargin: "240px 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [total]);
+  }, [hasMore, loadMore]);
 
-  const shown = sorted.slice(0, visible);
+  // CSV：現在の絞り込み集合を anon クライアントでページングして出力（上限 CSV_CAP）
+  const csvCapped = total > CSV_CAP;
+  const onExportCsv = useCallback(async () => {
+    if (csvBusy || total === 0) return;
+    setCsvBusy(true);
+    try {
+      const all: Clinic[] = [];
+      const limit = Math.min(total, CSV_CAP);
+      let from = 0;
+      while (from < limit) {
+        const to = Math.min(from + PAGE - 1, limit - 1);
+        let q = buildQuery(
+          supabase,
+          filters,
+          memberId,
+          "*, members:assigned_to(name,color)",
+        );
+        q = applySort(q, filters.sort);
+        let res = await q.range(from, to);
+        if (res.error) {
+          let q2 = buildQuery(supabase, filters, memberId, "*");
+          q2 = applySort(q2, filters.sort);
+          res = await q2.range(from, to);
+        }
+        const chunk = (res.data ?? []) as unknown as Clinic[];
+        all.push(...chunk);
+        if (chunk.length === 0) break;
+        from += PAGE;
+      }
+      downloadCsv(all);
+    } finally {
+      setCsvBusy(false);
+    }
+  }, [csvBusy, total, supabase, filters, memberId]);
 
   return (
     <div>
-      <FilterBar clinics={clinics} filters={filters} onChange={setFilters} />
+      <FilterBar
+        filters={filters}
+        onChange={(patch) => updateUrl(patch)}
+      />
 
       <div className="list-toolbar">
         <span className="list-count">{total}件</span>
         <div className="list-tools">
           <select
             className="field sort-field"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
+            value={filters.sort}
+            onChange={(e) => updateUrl({ sort: e.target.value as SortKey })}
             aria-label="並び替え"
           >
             {SORT_OPTIONS.map((o) => (
@@ -250,16 +361,21 @@ export function ClinicListRealtime({
           <button
             type="button"
             className="csv-btn"
-            onClick={() => exportCsv(sorted)}
-            disabled={total === 0}
+            onClick={onExportCsv}
+            disabled={total === 0 || csvBusy}
+            title={
+              csvCapped
+                ? `先頭 ${CSV_CAP} 件のみ出力します`
+                : undefined
+            }
           >
-            CSV出力
+            {csvBusy ? "出力中…" : "CSV出力"}
           </button>
         </div>
       </div>
 
       <div className="cards">
-        {shown.map((c) => (
+        {rows.map((c) => (
           <SwipeableCard
             key={c.id}
             clinic={c}
@@ -269,8 +385,20 @@ export function ClinicListRealtime({
           />
         ))}
         {total === 0 && <p className="empty">条件に合う医院がありません</p>}
+        {hasMore && (
+          <button
+            type="button"
+            className="csv-btn load-more"
+            onClick={() => void loadMore()}
+            disabled={loading}
+          >
+            {loading ? "読み込み中…" : "もっと読む"}
+          </button>
+        )}
         <div ref={sentinelRef} aria-hidden className="list-sentinel" />
       </div>
     </div>
   );
 }
+
+export { VIEW_KEYS, SORT_KEYS };
