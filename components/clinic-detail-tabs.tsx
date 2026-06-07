@@ -1,22 +1,20 @@
 // components/clinic-detail-tabs.tsx
-// 設計書 §3: 医院詳細のタブ（履歴／基本情報／結果入力）。
+// 設計書 §3 / モック DetailScreen のタブ（履歴／基本情報の2タブ）。
 // Dentia.html の .tabs/.t に対応。サーバーで描画済みのタブ中身を
 // children として受け取り、クライアントで表示切替のみ行う。
 "use client";
 
 import { useState } from "react";
 
-type TabKey = "history" | "info" | "result";
+type TabKey = "history" | "info";
 
 export function ClinicDetailTabs({
   history,
   info,
-  result,
   defaultTab = "history",
 }: {
   history: React.ReactNode;
   info: React.ReactNode;
-  result: React.ReactNode;
   defaultTab?: TabKey;
 }) {
   const [tab, setTab] = useState<TabKey>(defaultTab);
@@ -36,21 +34,12 @@ export function ClinicDetailTabs({
         >
           基本情報
         </button>
-        <button
-          className={"t" + (tab === "result" ? " on" : "")}
-          onClick={() => setTab("result")}
-        >
-          結果入力
-        </button>
       </div>
 
       <div style={{ display: tab === "history" ? "block" : "none" }}>
         {history}
       </div>
       <div style={{ display: tab === "info" ? "block" : "none" }}>{info}</div>
-      <div style={{ display: tab === "result" ? "block" : "none" }}>
-        {result}
-      </div>
     </>
   );
 }

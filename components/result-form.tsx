@@ -1,0 +1,239 @@
+// components/result-form.tsx
+// 設計書 §3 / モック ResultScreen の本文（.p2-name 以降）。
+// 結果ステータス選択 + メモ + 音声入力 + 「保存して次へ」。
+// 保存時は call_logs に insert し、clinics.status / latest_memo / assigned_to を同期。
+// （モックに無い next_action_at「次回予定」フィールドは持たない）
+"use client";
+
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Icon } from "@/components/icon";
+import { createClient } from "@/lib/supabase/client";
+import { STATUS_OPTIONS } from "@/lib/status";
+import type { ClinicStatus } from "@/lib/types";
+
+// Web Speech API（ブラウザ実装。型は最小限を宣言）
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  start: () => void;
+  stop: () => void;
+  onresult: ((e: { results: { 0: { 0: { transcript: string } } } }) => void) | null;
+  onerror: (() => void) | null;
+  onend: (() => void) | null;
+};
+
+export function ResultForm({
+  clinicId,
+  clinicName,
+  phone,
+  currentStatus,
+  memberId,
+}: {
+  clinicId: string;
+  clinicName: string;
+  phone: string | null;
+  currentStatus: ClinicStatus;
+  memberId: string | null;
+}) {
+  const router = useRouter();
+  // モックと同様、未架電（not_called）のときは未選択スタート。
+  const [sel, setSel] = useState<ClinicStatus | null>(
+    currentStatus === "not_called" ? null : currentStatus,
+  );
+  const [memo, setMemo] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  // 音声入力（Web Speech API）の対応可否を判定。
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  useEffect(() => {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (Ctor) setSpeechSupported(true);
+  }, []);
+
+  function startVoice() {
+    const w = window as unknown as {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!Ctor) return;
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const rec = new Ctor();
+    rec.lang = "ja-JP";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      setMemo((m) => ((m ? m + " " : "") + transcript).slice(0, 200));
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    recognitionRef.current = rec;
+    setListening(true);
+    rec.start();
+  }
+
+  function save() {
+    if (!sel) return;
+    setError(null);
+    startTransition(async () => {
+      const supabase = createClient();
+
+      // 1) 架電履歴を追加（担当者 member を記名）
+      const { error: logErr } = await supabase.from("call_logs").insert({
+        clinic_id: clinicId,
+        outcome: sel,
+        memo: memo || null,
+        user_id: memberId,
+      });
+      if (logErr) {
+        setError("登録に失敗しました");
+        return;
+      }
+
+      // 2) 一覧表示用の冗長カラムを同期（担当者もこの医院に割り当てる）
+      const { error: clinicErr } = await supabase
+        .from("clinics")
+        .update({
+          status: sel,
+          latest_memo: memo || null,
+          ...(memberId ? { assigned_to: memberId } : {}),
+        })
+        .eq("id", clinicId);
+      if (clinicErr) {
+        setError("医院情報の更新に失敗しました");
+        return;
+      }
+
+      setSaved(true);
+      // モック同様、保存表示の後に詳細へ戻る。
+      setTimeout(() => {
+        router.push(`/clinics/${clinicId}`);
+        router.refresh();
+      }, 850);
+    });
+  }
+
+  const tel = phone ? phone.replace(/[^\d+]/g, "") : "";
+
+  return (
+    <div className="pbody np">
+      <div className="p2-name">{clinicName}</div>
+      {phone && (
+        <a className="p2-tel" href={`tel:${tel}`}>
+          {phone}
+        </a>
+      )}
+
+      <div className="fld-lbl">結果（ステータス）</div>
+      <div className="stgrid">
+        {STATUS_OPTIONS.map((o) => {
+          const active = o.value === sel;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => setSel(o.value)}
+              className={`stbtn s-${o.color}` + (active ? " on" : "")}
+            >
+              {o.line ? (
+                <Icon name={o.icon} size={30} sw={1.8} className="line-ic" />
+              ) : (
+                <span className="circ">
+                  <Icon
+                    name={o.icon}
+                    size={24}
+                    fill={o.fill}
+                    sw={2.2}
+                    style={{ color: "#fff" }}
+                  />
+                </span>
+              )}
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="fld-lbl">メモ（任意）</div>
+      <div className="ta-wrap">
+        <textarea
+          value={memo}
+          onChange={(e) => setMemo(e.target.value)}
+          maxLength={200}
+          placeholder="聞き出した悩みや、次回約束などを入力"
+        />
+        <div className="ta-count">{memo.length}/200</div>
+      </div>
+
+      <button
+        type="button"
+        className="btn btn-outline voice"
+        onClick={startVoice}
+        disabled={!speechSupported}
+        title={
+          speechSupported
+            ? undefined
+            : "このブラウザは音声入力に対応していません"
+        }
+      >
+        <Icon name="mic" size={18} />
+        {listening ? "聞き取り中…" : "音声入力"}
+      </button>
+
+      {error && (
+        <p
+          style={{
+            marginTop: 12,
+            fontSize: 13,
+            fontWeight: 600,
+            color: "var(--red-fg)",
+          }}
+        >
+          {error}
+        </p>
+      )}
+
+      <div className="p2foot">
+        <button
+          type="button"
+          onClick={save}
+          disabled={!sel || pending}
+          className={
+            "btn btn-primary" +
+            (!sel ? " disabled" : "") +
+            (saved ? " ok" : "")
+          }
+        >
+          {saved ? (
+            <>
+              <Icon name="check" size={22} style={{ color: "#fff" }} />
+              保存しました
+            </>
+          ) : pending ? (
+            "保存中…"
+          ) : (
+            "保存して次へ"
+          )}
+        </button>
+        <div className="cap">
+          {sel ? "保存して次の医院へ進みます" : "ステータスを選択してください"}
+        </div>
+      </div>
+    </div>
+  );
+}
