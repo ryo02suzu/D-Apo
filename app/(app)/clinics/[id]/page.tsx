@@ -11,7 +11,6 @@ import { ClinicDetailTabs } from "@/components/clinic-detail-tabs";
 import { Icon } from "@/components/icon";
 import { PhoneEditor } from "@/components/phone-editor";
 import { StatusBadge } from "@/components/status-badge";
-import { getCurrentMember } from "@/lib/member";
 import { selectClinic, selectClinicLogs } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { fmtAgo } from "@/lib/time";
@@ -28,12 +27,14 @@ export default async function ClinicDetailPage({
   const { id } = await params;
   const { tab } = await searchParams;
   const supabase = await createClient();
-  await getCurrentMember();
 
-  const c = await selectClinic(supabase, id);
+  // 医院本体と架電履歴は互いに独立なので並列取得（逐次待ちを解消）。
+  // 担当者ゲートは layout 側で済んでいるため、ここでの getCurrentMember は不要。
+  const [c, logs] = await Promise.all([
+    selectClinic(supabase, id),
+    selectClinicLogs(supabase, id),
+  ]);
   if (!c) notFound();
-
-  const logs = await selectClinicLogs(supabase, id);
   const tel = c.phone ? c.phone.replace(/[^\d+]/g, "") : "";
   const ago = fmtAgo(c.updated_at);
   const mapQuery = encodeURIComponent(

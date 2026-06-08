@@ -17,10 +17,6 @@ export default async function ClinicResultPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const member = await getCurrentMember();
-
-  const c = await selectClinic(supabase, id);
-  if (!c) notFound();
 
   // 「次に架電する医院」を決定（現在の医院は除外）。
   // 未架電を最優先、無ければ折り返し対象（不通・担当者不在）。
@@ -49,7 +45,13 @@ export default async function ClinicResultPage({
     return null;
   }
 
-  const nextId = await pickNextId();
+  // member / 医院本体 / 次の医院 は互いに独立なので並列取得（逐次待ちを解消）。
+  const [member, c, nextId] = await Promise.all([
+    getCurrentMember(),
+    selectClinic(supabase, id),
+    pickNextId(),
+  ]);
+  if (!c) notFound();
   const nextHref = nextId ? `/clinics/${nextId}` : null;
 
   return (
