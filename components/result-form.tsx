@@ -112,31 +112,32 @@ export function ResultForm({
     startTransition(async () => {
       const supabase = createClient();
 
-      // 1) 架電履歴を追加（担当者 member を記名）
-      const { error: logErr } = await supabase.from("call_logs").insert({
-        clinic_id: clinicId,
-        outcome: sel,
-        memo: memo || null,
-        user_id: memberId,
-      });
-      if (logErr) {
+      // 架電履歴の追加(insert)と一覧用カラムの同期(update)は別テーブルで独立なので
+      // 並列実行して保存の待ち時間を短縮する（担当者もこの医院に割り当てる）。
+      const [logRes, clinicRes] = await Promise.all([
+        supabase.from("call_logs").insert({
+          clinic_id: clinicId,
+          outcome: sel,
+          memo: memo || null,
+          user_id: memberId,
+        }),
+        supabase
+          .from("clinics")
+          .update({
+            status: sel,
+            latest_memo: memo || null,
+            next_action_at: nextActionAt
+              ? new Date(nextActionAt).toISOString()
+              : null,
+            ...(memberId ? { assigned_to: memberId } : {}),
+          })
+          .eq("id", clinicId),
+      ]);
+      if (logRes.error) {
         setError("登録に失敗しました");
         return;
       }
-
-      // 2) 一覧表示用の冗長カラムを同期（担当者もこの医院に割り当てる）
-      const { error: clinicErr } = await supabase
-        .from("clinics")
-        .update({
-          status: sel,
-          latest_memo: memo || null,
-          next_action_at: nextActionAt
-            ? new Date(nextActionAt).toISOString()
-            : null,
-          ...(memberId ? { assigned_to: memberId } : {}),
-        })
-        .eq("id", clinicId);
-      if (clinicErr) {
+      if (clinicRes.error) {
         setError("医院情報の更新に失敗しました");
         return;
       }
@@ -146,7 +147,7 @@ export function ResultForm({
       const dest = nextHref ?? `/clinics/${clinicId}`;
       setTimeout(() => {
         router.push(dest);
-      }, 850);
+      }, 450);
     });
   }
 

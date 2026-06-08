@@ -2,6 +2,7 @@
 // 合言葉ログイン後の「自分は誰か」を表す担当者（member）の識別レイヤ。
 // d_apo_member Cookie に member.id（平文）を保持し、サーバー側で members 行を引く。
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -26,8 +27,11 @@ function pickColor(): string {
   return MEMBER_COLORS[Math.floor(Math.random() * MEMBER_COLORS.length)];
 }
 
-/** 現在のメンバー（Cookie の id で members を引く）。未設定/不在なら null。 */
-export async function getCurrentMember(): Promise<Member | null> {
+/**
+ * 現在のメンバー（Cookie の id で members を引く）。未設定/不在なら null。
+ * React cache() で 1 リクエスト内の重複呼び出し（layout とページ等）を 1 クエリに集約する。
+ */
+export const getCurrentMember = cache(async (): Promise<Member | null> => {
   const store = await cookies();
   const id = store.get(MEMBER_COOKIE)?.value;
   if (!id) return null;
@@ -40,7 +44,7 @@ export async function getCurrentMember(): Promise<Member | null> {
     .maybeSingle();
 
   return (data as Member | null) ?? null;
-}
+});
 
 /** members 一覧（ピッカー表示用） */
 export async function listMembers(): Promise<Member[]> {

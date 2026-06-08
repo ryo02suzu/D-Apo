@@ -24,9 +24,11 @@ type DB = Awaited<ReturnType<typeof createClient>>;
  * 未架電 → 折り返し(不通/担当者不在) → 先頭 の優先順位。
  */
 export async function fetchNextClinicId(supabase: DB): Promise<string | null> {
+  // 電話番号が無い医院は架電できないため除外する（phone IS NOT NULL）。
   const notCalled = await supabase
     .from("clinics")
     .select("id")
+    .not("phone", "is", null)
     .eq("status", "not_called")
     .order("updated_at", { ascending: true })
     .limit(1)
@@ -36,6 +38,7 @@ export async function fetchNextClinicId(supabase: DB): Promise<string | null> {
   const followup = await supabase
     .from("clinics")
     .select("id")
+    .not("phone", "is", null)
     .in("status", FOLLOWUP)
     .order("updated_at", { ascending: true })
     .limit(1)
@@ -45,6 +48,7 @@ export async function fetchNextClinicId(supabase: DB): Promise<string | null> {
   const first = await supabase
     .from("clinics")
     .select("id")
+    .not("phone", "is", null)
     .order("updated_at", { ascending: true })
     .limit(1)
     .maybeSingle();
