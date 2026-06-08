@@ -22,10 +22,12 @@ export default async function ClinicResultPage({
   // 未架電を最優先、無ければ折り返し対象（不通・担当者不在）。
   // いずれも updated_at 昇順（＝最後に触れたのが古い順）で 1 件。
   async function pickNextId(): Promise<string | null> {
+    // 電話番号が無い医院は架電できないため除外する（phone IS NOT NULL）。
     const notCalled = await supabase
       .from("clinics")
       .select("id")
       .neq("id", id)
+      .not("phone", "is", null)
       .eq("status", "not_called")
       .order("updated_at", { ascending: true })
       .limit(1)
@@ -36,6 +38,7 @@ export default async function ClinicResultPage({
       .from("clinics")
       .select("id")
       .neq("id", id)
+      .not("phone", "is", null)
       .in("status", ["no_answer", "unavailable"])
       .order("updated_at", { ascending: true })
       .limit(1)
