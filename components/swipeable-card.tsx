@@ -62,9 +62,10 @@ export function SwipeableCard({
     setDx(0);
   }, []);
 
-  // 他カードが開いたら自分は閉じる（一度に1枚だけ開く）
+  // 他カードが開いたら自分は閉じる（一度に1枚だけ開く＝親の openId への同期）
   useEffect(() => {
     if (openId && openId !== clinic.id && open !== "closed") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- 他カードの開閉(openId)に追従する意図的な同期
       close();
     }
   }, [openId, clinic.id, open, close]);

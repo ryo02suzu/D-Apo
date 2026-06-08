@@ -24,6 +24,8 @@
  */
 
 // Playwright はグローバルインストール（/opt/node22/...）にあるため絶対パスで読み込む。
+// CI ではグローバル解決のため型が引けず、ローカルでは引ける（=環境差）。常に効く @ts-ignore を使い、lint だけ抑制する。
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore  グローバルパス（/opt/node22/...）からの読み込みのため型解決はスキップ
 import { chromium, type Browser, type Page } from "playwright";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../lib/supabase/config";
@@ -292,7 +294,7 @@ async function main() {
   let consecLoadFail = 0; // 検索ページ読込の連続失敗数（ブロック検知用）
 
   for (const clinic of clinics) {
-    let report: Report = { ourName: clinic.name, matchedName: null, phone: null, confidence: "-", note: "" };
+    const report: Report = { ourName: clinic.name, matchedName: null, phone: null, confidence: "-", note: "" };
     let pageFailed = false; // 検索ページが開けなかったか
     try {
       const candidates = await searchSite(page, clinic.name);
@@ -368,7 +370,7 @@ async function main() {
   for (const r of reports) {
     console.log(`| ${r.ourName} | ${r.matchedName ?? "-"} | ${r.phone ?? "-"} | ${r.confidence} | ${r.note} |`);
   }
-  console.log(`\n# ${dryRun ? "DRY-RUN 完了: DB への書き込みは行っていません。" : "COMMIT 完了。"}`);
+  console.log(`\n# ${dryRun ? "DRY-RUN 完了: DB への書き込みは行っていません。" : "COMMIT 完了。"} 電話取得 ${okCount}/${clinics.length} 件`);
 }
 
 main().catch((e) => {

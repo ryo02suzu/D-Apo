@@ -87,8 +87,9 @@ export function AppHeader({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  // ルートが変わったらメニューを閉じる
+  // ルートが変わったらメニューを閉じる（ナビゲーションという外部状態への同期）
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 画面遷移に追従してメニューを閉じる意図的な同期
     setOpen(false);
   }, [pathname]);
 
