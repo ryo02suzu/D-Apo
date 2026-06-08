@@ -5,7 +5,7 @@
 // その他のルートでも妥当な語彙を割り当てる（モック realtime.js の ACTIVITIES）。
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentMember } from "@/components/member-context";

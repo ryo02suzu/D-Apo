@@ -5,7 +5,7 @@
 // 保存後は「次の未架電医院」へ自動遷移する（nextHref）。
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icon";
 import { createClient } from "@/lib/supabase/client";
@@ -60,19 +60,17 @@ export function ResultForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  // 音声入力（Web Speech API）の対応可否を判定。
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-
-  useEffect(() => {
+  // 音声入力（Web Speech API）の対応可否を判定（初期化時に1回・effect不要）。
+  const [speechSupported] = useState(() => {
+    if (typeof window === "undefined") return false;
     const w = window as unknown as {
       SpeechRecognition?: new () => SpeechRecognitionLike;
       webkitSpeechRecognition?: new () => SpeechRecognitionLike;
     };
-    const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
-    if (Ctor) setSpeechSupported(true);
-  }, []);
+    return !!(w.SpeechRecognition || w.webkitSpeechRecognition);
+  });
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
   function startVoice() {
     const w = window as unknown as {
