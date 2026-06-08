@@ -1,7 +1,10 @@
-# 全国の歯科医院の電話番号を厚労省「医療情報ネット」から補完する手動ジョブ。
-# - 手動実行のみ（Actions画面 → Run workflow、または gh workflow run）。常時自動ではない。
-# - phone 未登録のみ処理＝再開可能。1回の実行で時間上限まで進み、残りは再実行で継続。
+# 全国の歯科医院の電話番号を厚労省「医療情報ネット」から補完するジョブ。
+# - 手動実行（Actions画面 → Run workflow、または gh workflow run）で scope を指定して任意実行できる。
+# - 自動継続: 6時間ごとのスケジュールでも実行し、5.5h上限で止まっても「続き」を自動で進める。
+#   スケジュール実行時は優先順(関東→東北→中部…)で全都道府県を順に処理する。
+# - phone 未登録のみ処理＝再開可能。処理済み(電話あり/該当なし)は自動スキップ。
 # - レート約1req/s・識別可能UA（スクリプト側）。匿名キーはリポジトリ内設定を使用（Secret不要）。
+# - 全国の補完が完了したらスケジュールは“空振り”になるだけなので、不要になったら schedule を外すこと。
 name: enrich-phones
 on:
   workflow_dispatch:
@@ -15,6 +18,9 @@ on:
         description: "scope=prefecture/city の時の値（例: 東京都 / 渋谷区）"
         type: string
         default: ""
+  schedule:
+    # 6時間ごと(UTC)。1ジョブ上限5.5hなので約30分の余裕を持って次が走り、続きから進む。
+    - cron: "0 */6 * * *"
 concurrency:
   group: enrich-phones
   cancel-in-progress: false
@@ -35,7 +41,23 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - name: Enrich phones
         run: |
-          if [ "${{ inputs.scope }}" = "prefecture" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            # 自動継続: 優先順(関東→東北→中部→近畿→中国→四国→九州沖縄→北海道)で全都道府県を処理。
+            # 処理済みの県は対象0件で即終了するため、未完の県の「続き」へ自然に進む。
+            PREFS="東京都 千葉県 神奈川県 埼玉県 茨城県 栃木県 群馬県 \
+                   宮城県 福島県 青森県 岩手県 秋田県 山形県 \
+                   愛知県 静岡県 新潟県 長野県 岐阜県 山梨県 富山県 石川県 福井県 \
+                   大阪府 兵庫県 京都府 奈良県 滋賀県 和歌山県 三重県 \
+                   広島県 岡山県 山口県 島根県 鳥取県 \
+                   香川県 愛媛県 徳島県 高知県 \
+                   福岡県 熊本県 鹿児島県 長崎県 大分県 宮崎県 佐賀県 沖縄県 \
+                   北海道"
+            for pref in $PREFS; do
+              echo "::group::$pref"
+              pnpm exec tsx scripts/enrich-phones-mhlw.ts --prefecture "$pref" --commit || echo "WARN: $pref failed, continue"
+              echo "::endgroup::"
+            done
+          elif [ "${{ inputs.scope }}" = "prefecture" ]; then
             pnpm exec tsx scripts/enrich-phones-mhlw.ts --prefecture "${{ inputs.value }}" --commit
           elif [ "${{ inputs.scope }}" = "city" ]; then
             pnpm exec tsx scripts/enrich-phones-mhlw.ts --city "${{ inputs.value }}" --commit
