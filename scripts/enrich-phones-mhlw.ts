@@ -161,11 +161,16 @@ type ClinicRow = {
 };
 
 async function fetchClinics(): Promise<ClinicRow[]> {
-  // PostgREST は 1 リクエスト最大 1000 行のため、offset でページングして
-  // phone 未登録の対象を全件読み込む（書き込み前の読み取りなので offset は安定）。
+  // PostgREST は 1 リクエスト最大 1000 行のためページングする。
+  // order=id.asc + offset 方式は prefecture 絞り込み時にソートが重くなり、
+  // Supabase の statement timeout(57014) で 500 になる（例: 東京都で約4.4秒）。
+  // 主キー(id)のキーセットページング(id > 直前ページの最大id)に変更すると、
+  // PK インデックスをそのまま辿るので prefecture 絞り込みでも高速・安定(約0.26秒)。
+  // 読み取りは書き込み前にまとめて行うため id 昇順で重複なく全件取得できる。
   const PAGE = 1000;
   const out: ClinicRow[] = [];
-  for (let offset = 0; ; offset += PAGE) {
+  let afterId = "00000000-0000-0000-0000-000000000000"; // id(uuid) の下限
+  for (;;) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/clinics`);
     url.searchParams.set("select", "id,name,address,city,external_id,phone");
     if (allJapan) {
@@ -178,9 +183,9 @@ async function fetchClinics(): Promise<ClinicRow[]> {
     url.searchParams.set("phone", "is.null");
     // 一度試して該当なしだった医院(phone_source='mhlw_nohit')は除外＝再処理しない
     url.searchParams.set("phone_source", "is.null");
+    url.searchParams.set("id", `gt.${afterId}`);
     url.searchParams.set("order", "id.asc");
     url.searchParams.set("limit", String(PAGE));
-    url.searchParams.set("offset", String(offset));
     const res = await fetch(url.toString(), {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
     });
@@ -188,6 +193,7 @@ async function fetchClinics(): Promise<ClinicRow[]> {
     const rows = (await res.json()) as ClinicRow[];
     out.push(...rows);
     if (rows.length < PAGE) break;
+    afterId = rows[rows.length - 1].id; // 次ページはこの id より大きいものから
     if (limit > 0 && out.length >= limit) break;
   }
   return limit > 0 ? out.slice(0, limit) : out;
