@@ -13,6 +13,7 @@ import { FilterBar, type Filters, type ViewKey } from "@/components/filter-bar";
 import { useCurrentMember } from "@/components/member-context";
 import { usePresenceList } from "@/components/presence-provider";
 import { createClient } from "@/lib/supabase/client";
+import { escapeIlike } from "@/lib/ilike";
 import { STATUS_LABEL } from "@/lib/status";
 import type { Clinic } from "@/lib/types";
 
@@ -33,11 +34,6 @@ const CSV_CAP = 5000;
 
 const VIEW_KEYS: ViewKey[] = ["all", "mine", "follow", "uncalled"];
 const SORT_KEYS: SortKey[] = ["uncalled", "next", "updated", "name"];
-
-/** PostgREST or() の ilike 値エスケープ（lib/queries.ts と同等） */
-function escapeIlike(value: string): string {
-  return value.replace(/[,()%]/g, (m) => (m === "%" ? "\\%" : " "));
-}
 
 /** 現在のフィルタを Supabase クエリへ適用（ブラウザクライアント用・load more / CSV 共用） */
 function buildQuery(

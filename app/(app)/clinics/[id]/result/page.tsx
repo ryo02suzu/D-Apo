@@ -5,6 +5,7 @@
 import { notFound } from "next/navigation";
 import { ResultForm } from "@/components/result-form";
 import { getCurrentMember } from "@/lib/member";
+import { fetchNextClinicId } from "@/lib/next-clinic";
 import { selectClinic } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,41 +19,12 @@ export default async function ClinicResultPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  // 「次に架電する医院」を決定（現在の医院は除外）。
-  // 未架電を最優先、無ければ折り返し対象（不通・担当者不在）。
-  // いずれも updated_at 昇順（＝最後に触れたのが古い順）で 1 件。
-  async function pickNextId(): Promise<string | null> {
-    // 電話番号が無い医院は架電できないため除外する（phone IS NOT NULL）。
-    const notCalled = await supabase
-      .from("clinics")
-      .select("id")
-      .neq("id", id)
-      .not("phone", "is", null)
-      .eq("status", "not_called")
-      .order("updated_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (notCalled.data?.id) return notCalled.data.id as string;
-
-    const followup = await supabase
-      .from("clinics")
-      .select("id")
-      .neq("id", id)
-      .not("phone", "is", null)
-      .in("status", ["no_answer", "unavailable"])
-      .order("updated_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-    if (followup.data?.id) return followup.data.id as string;
-
-    return null;
-  }
-
   // member / 医院本体 / 次の医院 は互いに独立なので並列取得（逐次待ちを解消）。
+  // 次の医院は「現在の医院を除外」「対象が尽きたら先頭に戻さず null」で取得。
   const [member, c, nextId] = await Promise.all([
     getCurrentMember(),
     selectClinic(supabase, id),
-    pickNextId(),
+    fetchNextClinicId(supabase, { excludeId: id, fallbackToFirst: false }),
   ]);
   if (!c) notFound();
   const nextHref = nextId ? `/clinics/${nextId}` : null;

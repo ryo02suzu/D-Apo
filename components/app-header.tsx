@@ -18,7 +18,7 @@ import { Icon } from "@/components/icon";
 import { useCurrentMember } from "@/components/member-context";
 
 type LeftKind = "menu" | "back" | "close";
-type RightKind = "bell" | "search" | "refresh" | null;
+type RightKind = "search" | "refresh" | null;
 
 type HeadSpec = {
   left: LeftKind;
@@ -31,7 +31,7 @@ type HeadSpec = {
 
 function specFor(pathname: string): HeadSpec {
   if (pathname === "/clinics")
-    return { left: "menu", title: "コールキュー", right: "bell" };
+    return { left: "menu", title: "コールキュー", right: null };
   if (pathname === "/clinics/list")
     return { left: "menu", title: "医院一覧", right: "search" };
   if (pathname === "/history")
@@ -60,7 +60,7 @@ function specFor(pathname: string): HeadSpec {
       titleLink: { label: "編集", href: `/clinics/${detailMatch[1]}?tab=info` },
     };
   // フォールバック
-  return { left: "menu", title: "コールキュー", right: "bell" };
+  return { left: "menu", title: "コールキュー", right: null };
 }
 
 export function AppHeader({
@@ -170,13 +170,21 @@ export function AppHeader({
         >
           <Icon name="refresh" />
         </button>
-      ) : spec.right ? (
+      ) : spec.right === "search" ? (
         <button
           type="button"
           className="ah-btn"
-          aria-label={spec.right === "bell" ? "通知" : "検索"}
+          aria-label="検索"
+          onClick={() => {
+            // 一覧の検索入力にフォーカス（同一ページ内）。
+            const el = document.getElementById("clinic-search");
+            if (el) {
+              el.scrollIntoView({ block: "center", behavior: "smooth" });
+              (el as HTMLInputElement).focus();
+            }
+          }}
         >
-          <Icon name={spec.right} />
+          <Icon name="search" />
         </button>
       ) : (
         // 右ボタンが無いルートでも中央タイトルを中央寄せに保つためのスペーサ

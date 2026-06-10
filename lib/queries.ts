@@ -3,6 +3,7 @@
 // 未適用の環境でもデータが必ずロードされるよう、embed が失敗したら
 // embed なしの select にフォールバックするヘルパ。
 import { createClient } from "@/lib/supabase/server";
+import { escapeIlike } from "@/lib/ilike";
 import type { Clinic, CallLogFeedItem, CallLogWithUser } from "@/lib/types";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
@@ -42,12 +43,6 @@ export type ClinicPageFilters = {
 
 /** 要フォロー（ビュー）に含めるステータス */
 const FOLLOW_STATUSES = ["no_answer", "unavailable"];
-
-/** PostgREST の or() で使う ilike 値のエスケープ（% , を無害化） */
-function escapeIlike(value: string): string {
-  // カンマは or() の区切り、% は LIKE のワイルドカード。括弧も予約文字。
-  return value.replace(/[,()%]/g, (m) => (m === "%" ? "\\%" : " "));
-}
 
 /**
  * 共通フィルタを Supabase クエリビルダに適用する。
