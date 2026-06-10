@@ -232,12 +232,16 @@ export function ClinicListRealtime({
           setRows((prev) => {
             if (payload.eventType === "UPDATE") {
               const next = payload.new as Clinic;
+              // 画面に出ていない医院の更新（補完による電話番号書き込み等）は
+              // 同じ参照を返して再描画を起こさない＝大量更新中のもたつきを防ぐ。
+              if (!prev.some((c) => c.id === next.id)) return prev;
               return prev.map((c) =>
                 c.id === next.id ? { ...c, ...next } : c,
               );
             }
             if (payload.eventType === "DELETE") {
               const old = payload.old as Clinic;
+              if (!prev.some((c) => c.id === old.id)) return prev;
               return prev.filter((c) => c.id !== old.id);
             }
             // INSERT は現在のフィルタ/ページ範囲に属するか不明なので無視。
