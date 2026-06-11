@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Avatar } from "@/components/avatar";
 import { CallButton } from "@/components/call-button";
 import { Icon } from "@/components/icon";
+import { OpenStatusBadge } from "@/components/open-status-badge";
 import { StatusBadge } from "@/components/status-badge";
 import { fmtAgo } from "@/lib/time";
 import type { Clinic } from "@/lib/types";
@@ -42,6 +43,7 @@ export function ClinicCard({
     <Link href={`/clinics/${clinic.id}`} className="listcard">
       <div className="r1">
         <StatusBadge status={clinic.status} />
+        <OpenStatusBadge hours={clinic.hours} />
         {busyBy && (
           <span className="busy">
             <span className="dot" />

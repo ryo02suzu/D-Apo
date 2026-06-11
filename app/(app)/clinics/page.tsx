@@ -31,10 +31,15 @@ export default async function HomeScreen() {
   // サーバーコンポーネントのリクエスト処理中の現在時刻取得は正当なので purity 例外。
   // eslint-disable-next-line react-hooks/purity -- サーバー描画時の現在時刻取得（本日判定）
   const jstNow = new Date(Date.now() + 9 * 3600 * 1000);
-  const startOfTodayJstUtc = new Date(
+  const startOfTodayJstMs =
     Date.UTC(jstNow.getUTCFullYear(), jstNow.getUTCMonth(), jstNow.getUTCDate()) -
-      9 * 3600 * 1000,
+    9 * 3600 * 1000;
+  const startOfTodayJstUtc = new Date(startOfTodayJstMs).toISOString();
+  // 本日(JST)の終わり＝翌0:00。期限超過/今日バッジの判定に使う。
+  const endOfTodayJstUtc = new Date(
+    startOfTodayJstMs + 24 * 3600 * 1000,
   ).toISOString();
+  const nowIso = new Date(jstNow.getTime() - 9 * 3600 * 1000).toISOString();
 
   // 全件を読まず、COUNT クエリ（head:true）で集計を並列実行（53k 件でもスケール）
   const [
@@ -45,6 +50,7 @@ export default async function HomeScreen() {
     todayAppoRes,
     nextId,
     schedRes,
+    overdueRes,
   ] = await Promise.all([
     // 総件数（全体の母数）
     supabase.from("clinics").select("id", { count: "exact", head: true }),
@@ -79,6 +85,12 @@ export default async function HomeScreen() {
       .not("next_action_at", "is", null)
       .order("next_action_at", { ascending: true })
       .limit(8),
+    // 期限超過のフォロー数（next_action_at が現在より過去）
+    supabase
+      .from("clinics")
+      .select("id", { count: "exact", head: true })
+      .not("next_action_at", "is", null)
+      .lt("next_action_at", nowIso),
   ]);
 
   // 集計（COUNT 結果）
@@ -90,6 +102,7 @@ export default async function HomeScreen() {
   const todayHeardRate = todayCalls
     ? Math.round((todayHeard / todayCalls) * 1000) / 10
     : 0;
+  const overdueCount = overdueRes.count ?? 0; // 期限超過のフォロー数
 
   // 次に電話する医院（1件のみ取得）
   const next = nextId ? await selectClinic(supabase, nextId) : null;
@@ -194,10 +207,13 @@ export default async function HomeScreen() {
 
       <div className="divider" />
 
-      {/* 今日の予定 */}
+      {/* 今日の予定（期限超過・本日分は警告バッジで強調） */}
       <div className="sec sched">
         <div className="sec-head">
           <h3>次回予定</h3>
+          {overdueCount > 0 && (
+            <span className="badge b-red">期限超過 {overdueCount}件</span>
+          )}
           <Link href="/clinics/list" className="link">
             すべて見る
           </Link>
@@ -205,15 +221,22 @@ export default async function HomeScreen() {
         {schedule.length === 0 ? (
           <p className="empty sm">予定はまだありません</p>
         ) : (
-          schedule.map((c) => (
-            <Link key={c.id} href={`/clinics/${c.id}`} className="item">
-              <span className="time">
-                {formatSchedule(c.next_action_at!).replace(/^\d+\/\d+\s/, "")}
-              </span>
-              <span className="cl">{c.name}</span>
-              <StatusBadge status={c.status} />
-            </Link>
-          ))
+          schedule.map((c) => {
+            const at = c.next_action_at!;
+            const overdue = at < nowIso;
+            const isToday = !overdue && at < endOfTodayJstUtc;
+            return (
+              <Link key={c.id} href={`/clinics/${c.id}`} className="item">
+                <span className="time">
+                  {formatSchedule(at).replace(/^\d+\/\d+\s/, "")}
+                </span>
+                <span className="cl">{c.name}</span>
+                {overdue && <span className="badge b-red">超過</span>}
+                {isToday && <span className="badge b-amber">今日</span>}
+                <StatusBadge status={c.status} />
+              </Link>
+            );
+          })
         )}
       </div>
     </div>
