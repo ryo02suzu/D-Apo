@@ -13,6 +13,7 @@ import { FilterBar, type Filters, type ViewKey } from "@/components/filter-bar";
 import { useCurrentMember } from "@/components/member-context";
 import { usePresenceList } from "@/components/presence-provider";
 import { createClient } from "@/lib/supabase/client";
+import { escapeIlike } from "@/lib/ilike";
 import { STATUS_LABEL } from "@/lib/status";
 import type { Clinic } from "@/lib/types";
 
@@ -33,11 +34,6 @@ const CSV_CAP = 5000;
 
 const VIEW_KEYS: ViewKey[] = ["all", "mine", "follow", "uncalled"];
 const SORT_KEYS: SortKey[] = ["uncalled", "next", "updated", "name"];
-
-/** PostgREST or() の ilike 値エスケープ（lib/queries.ts と同等） */
-function escapeIlike(value: string): string {
-  return value.replace(/[,()%]/g, (m) => (m === "%" ? "\\%" : " "));
-}
 
 /** 現在のフィルタを Supabase クエリへ適用（ブラウザクライアント用・load more / CSV 共用） */
 function buildQuery(
@@ -232,12 +228,16 @@ export function ClinicListRealtime({
           setRows((prev) => {
             if (payload.eventType === "UPDATE") {
               const next = payload.new as Clinic;
+              // 画面に出ていない医院の更新（補完による電話番号書き込み等）は
+              // 同じ参照を返して再描画を起こさない＝大量更新中のもたつきを防ぐ。
+              if (!prev.some((c) => c.id === next.id)) return prev;
               return prev.map((c) =>
                 c.id === next.id ? { ...c, ...next } : c,
               );
             }
             if (payload.eventType === "DELETE") {
               const old = payload.old as Clinic;
+              if (!prev.some((c) => c.id === old.id)) return prev;
               return prev.filter((c) => c.id !== old.id);
             }
             // INSERT は現在のフィルタ/ページ範囲に属するか不明なので無視。

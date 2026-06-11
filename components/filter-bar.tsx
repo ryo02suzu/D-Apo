@@ -125,6 +125,7 @@ export function FilterBar({
       <div className="search-bar">
         <Icon name="search" size={17} style={{ color: "var(--muted2)" }} />
         <input
+          id="clinic-search"
           type="search"
           inputMode="search"
           placeholder="医院名・住所で検索"
