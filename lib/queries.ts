@@ -3,7 +3,11 @@
 // 未適用の環境でもデータが必ずロードされるよう、embed が失敗したら
 // embed なしの select にフォールバックするヘルパ。
 import { createClient } from "@/lib/supabase/server";
-import { escapeIlike } from "@/lib/ilike";
+import {
+  CORP_ILIKE_PATTERNS,
+  CORP_OR_CONDITION,
+  escapeIlike,
+} from "@/lib/ilike";
 import type { Clinic, CallLogFeedItem, CallLogWithUser } from "@/lib/types";
 
 type DB = Awaited<ReturnType<typeof createClient>>;
@@ -39,6 +43,8 @@ export type ClinicPageFilters = {
   sort?: string;
   /** view=mine のときに使う現在メンバー id */
   memberId?: string;
+  /** 種別: houjin（医療法人）| kojin（個人・その他）。未指定はすべて */
+  corp?: string;
 };
 
 /** 要フォロー（ビュー）に含めるステータス */
@@ -56,6 +62,7 @@ function applyClinicFilters<T>(query: T, f: ClinicPageFilters): T {
     eq: (col: string, val: unknown) => typeof q;
     ilike: (col: string, val: string) => typeof q;
     in: (col: string, vals: unknown[]) => typeof q;
+    not: (col: string, op: string, val: string) => typeof q;
   };
   if (f.q) {
     const v = escapeIlike(f.q);
@@ -64,6 +71,14 @@ function applyClinicFilters<T>(query: T, f: ClinicPageFilters): T {
   if (f.pref) q = q.eq("prefecture", f.pref);
   if (f.city) q = q.ilike("city", `%${escapeIlike(f.city)}%`);
   if (f.status) q = q.eq("status", f.status);
+
+  // 種別（医療法人かどうか）: 名称パターンで判定（lib/ilike.ts に集約）
+  if (f.corp === "houjin") {
+    q = q.or(CORP_OR_CONDITION);
+  } else if (f.corp === "kojin") {
+    // 法人パターンを1つも含まない＝NOT の AND 連結
+    for (const p of CORP_ILIKE_PATTERNS) q = q.not("name", "ilike", p);
+  }
 
   switch (f.view) {
     case "mine":

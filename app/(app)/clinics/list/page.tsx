@@ -3,7 +3,7 @@
 // 1ページ目だけを取得（全件は読まない）。総件数は count:"exact" で取得し、
 // ClinicListRealtime（Client）へ initial / total / filters を渡す。
 import { ClinicListRealtime } from "@/components/clinic-list-realtime";
-import type { Filters, ViewKey } from "@/components/filter-bar";
+import type { CorpKey, Filters, ViewKey } from "@/components/filter-bar";
 import { getCurrentMember } from "@/lib/member";
 import { selectClinicsPage } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
@@ -28,6 +28,7 @@ export default async function ClinicsListPage({
     status?: string;
     view?: string;
     sort?: string;
+    corp?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -44,9 +45,12 @@ export default async function ClinicsListPage({
   const sort = (SORT_KEYS.includes(sp.sort ?? "")
     ? sp.sort
     : "uncalled") as SortKey;
+  const corp = (["houjin", "kojin"].includes(sp.corp ?? "")
+    ? sp.corp
+    : undefined) as CorpKey | undefined;
 
   const { rows, count } = await selectClinicsPage(supabase, {
-    filters: { q, pref, city, status, view, sort, memberId: member?.id },
+    filters: { q, pref, city, status, view, sort, corp, memberId: member?.id },
     range: { from: 0, to: PAGE - 1 },
   });
 
@@ -57,6 +61,7 @@ export default async function ClinicsListPage({
     status,
     view,
     sort,
+    corp,
   };
 
   return (
