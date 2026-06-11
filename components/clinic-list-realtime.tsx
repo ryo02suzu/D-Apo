@@ -13,7 +13,11 @@ import { FilterBar, type Filters, type ViewKey } from "@/components/filter-bar";
 import { useCurrentMember } from "@/components/member-context";
 import { usePresenceList } from "@/components/presence-provider";
 import { createClient } from "@/lib/supabase/client";
-import { escapeIlike } from "@/lib/ilike";
+import {
+  CORP_ILIKE_PATTERNS,
+  CORP_OR_CONDITION,
+  escapeIlike,
+} from "@/lib/ilike";
 import { STATUS_LABEL } from "@/lib/status";
 import type { Clinic } from "@/lib/types";
 
@@ -50,6 +54,12 @@ function buildQuery(
   if (filters.pref) q = q.eq("prefecture", filters.pref);
   if (filters.city) q = q.ilike("city", `%${escapeIlike(filters.city)}%`);
   if (filters.status) q = q.eq("status", filters.status);
+  // 種別（医療法人/個人）: サーバー側 lib/queries.ts と同じ判定
+  if (filters.corp === "houjin") {
+    q = q.or(CORP_OR_CONDITION);
+  } else if (filters.corp === "kojin") {
+    for (const p of CORP_ILIKE_PATTERNS) q = q.not("name", "ilike", p);
+  }
   switch (filters.view) {
     case "mine":
       q = q.eq("assigned_to", memberId);
@@ -205,6 +215,7 @@ export function ClinicListRealtime({
       if ("pref" in patch) setOrDelete("pref", patch.pref);
       if ("city" in patch) setOrDelete("city", patch.city);
       if ("status" in patch) setOrDelete("status", patch.status);
+      if ("corp" in patch) setOrDelete("corp", patch.corp);
       if ("view" in patch)
         setOrDelete("view", patch.view === "all" ? undefined : patch.view);
       if ("sort" in patch)

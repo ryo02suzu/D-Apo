@@ -71,6 +71,14 @@ export const PREFECTURES: string[] = [
   "沖縄県",
 ];
 
+/** 種別（医療法人かどうか）。単一選択。 */
+export type CorpKey = "houjin" | "kojin";
+
+export const CORP_OPTIONS: { value: CorpKey; label: string }[] = [
+  { value: "houjin", label: "医療法人" },
+  { value: "kojin", label: "個人・その他" },
+];
+
 /** 現在の絞り込み（searchParams 由来）。 */
 export type Filters = {
   q: string;
@@ -78,6 +86,8 @@ export type Filters = {
   city?: string;
   status?: string;
   view: ViewKey;
+  /** 種別: houjin | kojin（未指定はすべて） */
+  corp?: CorpKey;
 };
 
 export function FilterBar({
@@ -190,6 +200,29 @@ export function FilterBar({
           onBlur={(e) => onChange({ city: e.target.value || undefined })}
           aria-label="市区町村"
         />
+      </div>
+
+      {/* 種別（医療法人/個人）チップ */}
+      <div className="chips" role="group" aria-label="種別">
+        <button
+          type="button"
+          className={"chip" + (!filters.corp ? " on" : "")}
+          onClick={() => onChange({ corp: undefined })}
+        >
+          種別: すべて
+        </button>
+        {CORP_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            className={"chip" + (filters.corp === o.value ? " on" : "")}
+            onClick={() =>
+              onChange({ corp: filters.corp === o.value ? undefined : o.value })
+            }
+          >
+            {o.label}
+          </button>
+        ))}
       </div>
 
       {/* ステータス チップ */}
