@@ -34,7 +34,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../lib/supabase/config";
 const BASE = "https://www.iryou.teikyouseido.mhlw.go.jp";
 const SEARCH_URL = `${BASE}/znk-web/juminkanja/S2310/initialize?pref=13`;
 const UA = "DentiaResearch/1.0 (clinic phone enrichment; contact: ops@dentia.example)";
-const RATE_MS = 1100; // 約 1 req/sec
+const RATE_MS = 1100; // サイトへのリクエスト最小間隔（グローバル）。約 1 req/sec。
 
 // ---- CLI -----------------------------------------------------------
 function getArg(name: string): string | undefined {
@@ -55,7 +55,23 @@ const limit = getArg("limit")
 const commit = hasFlag("commit");
 const dryRun = !commit; // 既定は dry-run
 
+// 並列ワーカー数（既定3）。サイトの応答待ち(レイテンシ)を重ねて隠すためのもので、
+// リクエスト頻度自体は下のグローバル・レートゲートで約1req/sに保つ（礼儀は不変）。
+const CONCURRENCY = Math.max(1, Number(getArg("concurrency") ?? "3") || 3);
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// ---- グローバル・レートゲート --------------------------------------
+// 全ワーカー横断で「サイトへのリクエストは最低 RATE_MS 間隔」を保証する。
+// 並列化してもサイトへの実アクセス頻度は単一ワーカー時と同じ（≒1req/s）になる。
+let nextSlotAt = 0;
+async function rateGate(): Promise<void> {
+  const now = Date.now();
+  const slot = Math.max(now, nextSlotAt);
+  nextSlotAt = slot + RATE_MS;
+  const wait = slot - now;
+  if (wait > 0) await sleep(wait);
+}
 
 // ---- 正規化 / マッチング -------------------------------------------
 /** 全角半角・空白・記号差を吸収して比較用に正規化する。 */
@@ -239,6 +255,7 @@ async function searchSite(page: Page, name: string): Promise<{ name: string; hre
   // domcontentloaded + 要素待ちにして高速化（1件あたり ~20s → ~3-5s）。
   // 検索ページ自体が開けない＝ブロック/障害 → SEARCH_PAGE_FAILED で区別（呼び出し側で安全停止）。
   try {
+    await rateGate(); // 検索ページ取得（グローバルにレート制御）
     await page.goto(SEARCH_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForSelector("#keyword1", { timeout: 15000 });
   } catch {
@@ -246,6 +263,7 @@ async function searchSite(page: Page, name: string): Promise<{ name: string; hre
   }
   await page.fill("#keyword1", searchName(name));
   await page.click("#keyword1");
+  await rateGate(); // 検索送信（POST）も1リクエストとして数える
   await Promise.all([
     page.waitForURL(/S2400/, { timeout: 30000 }).catch(() => {}),
     page.keyboard.press("Enter"),
@@ -264,6 +282,7 @@ async function searchSite(page: Page, name: string): Promise<{ name: string; hre
 /** 詳細ページ HTML を fetch（素の HTML; JS 不要）。 */
 async function fetchDetail(href: string): Promise<string> {
   const url = href.startsWith("http") ? href : `${BASE}${href}`;
+  await rateGate(); // 詳細ページ取得（グローバルにレート制御）
   const res = await fetch(url, { headers: { "User-Agent": UA } });
   if (!res.ok) throw new Error(`detail fetch failed: ${res.status} ${url}`);
   return res.text();
@@ -280,26 +299,26 @@ type Report = {
 
 async function main() {
   console.log(`# MHLW ナビイ 電話番号補完  scope=${scopeLabel} limit=${limit} ` + (dryRun ? "(DRY-RUN: 書き込みなし)" : "(COMMIT: 書き込みあり)"));
-  console.log(`# レート制限: 約 ${(1000 / RATE_MS).toFixed(2)} req/sec / UA="${UA}"`);
+  console.log(`# レート制限: 約 ${(1000 / RATE_MS).toFixed(2)} req/sec（全ワーカー合計・グローバル） / 並列 ${CONCURRENCY} / UA="${UA}"`);
 
   const clinics = await fetchClinics();
   console.log(`# 対象 ${clinics.length} 件（phone IS NULL）\n`);
 
   const browser: Browser = await chromium.launch({ args: ["--no-sandbox"] });
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, userAgent: UA });
-  const page = await ctx.newPage();
 
   const reports: Report[] = [];
   let okCount = 0; // 成功(電話取得)件数
-  let consecLoadFail = 0; // 検索ページ読込の連続失敗数（ブロック検知用）
+  let consecLoadFail = 0; // 検索ページ読込の連続失敗数（ブロック検知・全ワーカー共有）
+  let stopped = false; // ブロック検知時に全ワーカーを止めるフラグ
+  let cursor = 0; // 次に処理する clinics のインデックス（ワーカー間で共有）
 
-  for (const clinic of clinics) {
+  /** 1医院を処理して report を返す（DB書き込みもここで実施）。 */
+  async function processOne(page: Page, clinic: ClinicRow): Promise<void> {
     const report: Report = { ourName: clinic.name, matchedName: null, phone: null, confidence: "-", note: "" };
-    let pageFailed = false; // 検索ページが開けなかったか
+    let pageFailed = false;
     try {
       const candidates = await searchSite(page, clinic.name);
-      await sleep(RATE_MS); // 検索後のレート制限
-
       if (candidates.length === 0) {
         report.note = "検索結果なし";
       } else {
@@ -310,7 +329,6 @@ async function main() {
           report.matchedName = best.name;
           report.confidence = best.confidence;
           const html = await fetchDetail(best.href);
-          await sleep(RATE_MS); // 詳細取得後のレート制限
           const phone = extractPhone(html);
           if (!phone) {
             report.note = "詳細ページに電話番号が見つからず";
@@ -344,10 +362,12 @@ async function main() {
       // 検索ページが開けない＝ブロック/障害の可能性。マークせず連続回数を数える。
       consecLoadFail++;
       if (consecLoadFail >= 20) {
-        console.error(
-          "\n⚠ 検索ページの読込が連続20回失敗。IPブロック/サイト障害の可能性が高いため、DB汚染を避けるため中断します。",
-        );
-        break;
+        if (!stopped) {
+          console.error(
+            "\n⚠ 検索ページの読込が連続20回失敗。IPブロック/サイト障害の可能性が高いため、DB汚染を避けるため中断します。",
+          );
+        }
+        stopped = true;
       }
     } else {
       // 検索ページは開けたが該当なし＝確定的な不一致 → 記録して次回スキップ
@@ -361,6 +381,25 @@ async function main() {
       }
     }
   }
+
+  /** ワーカー1本：自分用のページで、共有カーソルから次の医院を取り続ける。 */
+  async function worker(): Promise<void> {
+    const page = await ctx.newPage();
+    try {
+      for (;;) {
+        if (stopped) break;
+        const i = cursor++;
+        if (i >= clinics.length) break;
+        await processOne(page, clinics[i]);
+      }
+    } finally {
+      await page.close().catch(() => {});
+    }
+  }
+
+  // CONCURRENCY 本のワーカーを並走（リクエスト頻度はグローバルゲートで約1req/sに維持）。
+  const n = Math.min(CONCURRENCY, Math.max(1, clinics.length));
+  await Promise.all(Array.from({ length: n }, () => worker()));
 
   await browser.close();
 
