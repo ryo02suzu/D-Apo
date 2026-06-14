@@ -32,9 +32,31 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../lib/supabase/config";
 
 // ---- 定数 ----------------------------------------------------------
 const BASE = "https://www.iryou.teikyouseido.mhlw.go.jp";
-const SEARCH_URL = `${BASE}/znk-web/juminkanja/S2310/initialize?pref=13`;
 const UA = "DentiaResearch/1.0 (clinic phone enrichment; contact: ops@dentia.example)";
 const RATE_MS = 1100; // サイトへのリクエスト最小間隔（グローバル）。約 1 req/sec。
+
+// 都道府県名 → ナビイの pref コード(JIS X 0401, 2桁ゼロ詰め)。
+// ナビイのフリーワード検索は initialize?pref=NN で都道府県スコープが決まり、
+// そのスコープ内の施設しかヒットしない。対象院の都道府県に合わせて初期化しないと
+// 「検索結果なし」になる（東京以外が全て取れなかった既存バグの原因）。
+const PREF_CODE: Record<string, string> = {
+  北海道: "01", 青森県: "02", 岩手県: "03", 宮城県: "04", 秋田県: "05",
+  山形県: "06", 福島県: "07", 茨城県: "08", 栃木県: "09", 群馬県: "10",
+  埼玉県: "11", 千葉県: "12", 東京都: "13", 神奈川県: "14", 新潟県: "15",
+  富山県: "16", 石川県: "17", 福井県: "18", 山梨県: "19", 長野県: "20",
+  岐阜県: "21", 静岡県: "22", 愛知県: "23", 三重県: "24", 滋賀県: "25",
+  京都府: "26", 大阪府: "27", 兵庫県: "28", 奈良県: "29", 和歌山県: "30",
+  鳥取県: "31", 島根県: "32", 岡山県: "33", 広島県: "34", 山口県: "35",
+  徳島県: "36", 香川県: "37", 愛媛県: "38", 高知県: "39", 福岡県: "40",
+  佐賀県: "41", 長崎県: "42", 熊本県: "43", 大分県: "44", 宮崎県: "45",
+  鹿児島県: "46", 沖縄県: "47",
+};
+
+/** 対象院の都道府県に合わせた検索ページ(初期化)URL を返す。未対応県は null。 */
+function searchUrl(prefName: string | null | undefined): string | null {
+  const code = prefName ? PREF_CODE[prefName] : undefined;
+  return code ? `${BASE}/znk-web/juminkanja/S2310/initialize?pref=${code}` : null;
+}
 
 // ---- CLI -----------------------------------------------------------
 function getArg(name: string): string | undefined {
@@ -172,6 +194,7 @@ function formatPhone(digits: string): string {
 type ClinicRow = {
   id: string;
   name: string;
+  prefecture: string | null;
   address: string | null;
   city: string | null;
   external_id: string | null;
@@ -190,7 +213,7 @@ async function fetchClinics(): Promise<ClinicRow[]> {
   let afterId = "00000000-0000-0000-0000-000000000000"; // id(uuid) の下限
   for (;;) {
     const url = new URL(`${SUPABASE_URL}/rest/v1/clinics`);
-    url.searchParams.set("select", "id,name,address,city,external_id,phone");
+    url.searchParams.set("select", "id,name,prefecture,address,city,external_id,phone");
     if (allJapan) {
       // 地域フィルタなし（全国）
     } else if (filterPref) {
@@ -250,13 +273,13 @@ async function markNoHit(id: string): Promise<void> {
 
 // ---- ナビイ検索（Playwright） --------------------------------------
 /** 院名でフリーワード検索し、結果一覧から詳細リンク候補を返す。 */
-async function searchSite(page: Page, name: string): Promise<{ name: string; href: string }[]> {
+async function searchSite(page: Page, name: string, url: string): Promise<{ name: string; href: string }[]> {
   // networkidle はこのサイト（常時通信）で最大60秒待ちになり激遅。
   // domcontentloaded + 要素待ちにして高速化（1件あたり ~20s → ~3-5s）。
   // 検索ページ自体が開けない＝ブロック/障害 → SEARCH_PAGE_FAILED で区別（呼び出し側で安全停止）。
   try {
     await rateGate(); // 検索ページ取得（グローバルにレート制御）
-    await page.goto(SEARCH_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.waitForSelector("#keyword1", { timeout: 15000 });
   } catch {
     throw new Error("SEARCH_PAGE_FAILED");
@@ -317,8 +340,16 @@ async function main() {
   async function processOne(page: Page, clinic: ClinicRow): Promise<void> {
     const report: Report = { ourName: clinic.name, matchedName: null, phone: null, confidence: "-", note: "" };
     let pageFailed = false;
+    const url = searchUrl(clinic.prefecture);
     try {
-      const candidates = await searchSite(page, clinic.name);
+      if (!url) {
+        // 都道府県不明/未対応は nohit を付けず（再処理可能なまま）スキップする
+        report.note = `都道府県が不明/未対応のためスキップ: ${clinic.prefecture ?? "(なし)"}`;
+        reports.push(report);
+        console.error(`  skip: ${clinic.name} -> ${report.note}`);
+        return;
+      }
+      const candidates = await searchSite(page, clinic.name, url);
       if (candidates.length === 0) {
         report.note = "検索結果なし";
       } else {
