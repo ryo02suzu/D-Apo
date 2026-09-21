@@ -54,6 +54,14 @@ function buildQuery(
   if (filters.pref) q = q.eq("prefecture", filters.pref);
   if (filters.city) q = q.ilike("city", `%${escapeIlike(filters.city)}%`);
   if (filters.status) q = q.eq("status", filters.status);
+  // ホームページ有無: サーバー側 lib/queries.ts と同じ判定
+  if (
+    filters.hp === "has" ||
+    filters.hp === "none" ||
+    filters.hp === "unknown"
+  ) {
+    q = q.eq("website_status", filters.hp);
+  }
   // 種別（医療法人/個人）: サーバー側 lib/queries.ts と同じ判定
   if (filters.corp === "houjin") {
     q = q.or(CORP_OR_CONDITION);
@@ -216,6 +224,7 @@ export function ClinicListRealtime({
       if ("city" in patch) setOrDelete("city", patch.city);
       if ("status" in patch) setOrDelete("status", patch.status);
       if ("corp" in patch) setOrDelete("corp", patch.corp);
+      if ("hp" in patch) setOrDelete("hp", patch.hp);
       if ("view" in patch)
         setOrDelete("view", patch.view === "all" ? undefined : patch.view);
       if ("sort" in patch)

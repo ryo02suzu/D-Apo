@@ -40,6 +40,18 @@ export default async function ClinicDetailPage({
   const mapQuery = encodeURIComponent(
     c.address || [c.prefecture, c.city, c.name].filter(Boolean).join(" "),
   );
+  // ホームページ。営業中にワンタップで開けるよう、ホスト名だけ表示してリンクにする。
+  // http/https 以外（javascript: 等）は開かない。
+  const hpUrl =
+    c.website_url && /^https?:\/\//i.test(c.website_url) ? c.website_url : null;
+  let hpHost: string | null = null;
+  if (hpUrl) {
+    try {
+      hpHost = new URL(hpUrl).hostname.replace(/^www\./, "");
+    } catch {
+      hpHost = null;
+    }
+  }
 
   return (
     <div className="pbody np">
@@ -95,6 +107,16 @@ export default async function ClinicDetailPage({
               </div>
             )}
             <div className="info-row">
+              <span className="ik">ホームページ</span>
+              <span className="iv">
+                {c.website_status === "has"
+                  ? (hpHost ?? "あり")
+                  : c.website_status === "none"
+                    ? "なし"
+                    : "未確認"}
+              </span>
+            </div>
+            <div className="info-row">
               <span className="ik">担当者</span>
               <span className="iv">{c.members?.name ?? "未割当"}</span>
             </div>
@@ -104,6 +126,17 @@ export default async function ClinicDetailPage({
                 {c.prefecture} {c.city}
               </span>
             </div>
+            {hpUrl && (
+              <a
+                className="map"
+                href={hpUrl}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+              >
+                <Icon name="globe" size={20} style={{ color: "var(--teal)" }} />
+                <span>ホームページを開く</span>
+              </a>
+            )}
             <a
               className="map"
               href={`https://www.google.com/maps/search/?api=1&query=${mapQuery}`}

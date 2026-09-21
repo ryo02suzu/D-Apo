@@ -79,6 +79,19 @@ export const CORP_OPTIONS: { value: CorpKey; label: string }[] = [
   { value: "kojin", label: "個人・その他" },
 ];
 
+/**
+ * ホームページの有無。単一選択。
+ * 「未確認」は厚労省データに未記載というだけで、実際は持っている場合がある。
+ * そのため「なし」と「未確認」は分けて扱う（なし断定で架電すると事故るため）。
+ */
+export type HpKey = "has" | "none" | "unknown";
+
+export const HP_OPTIONS: { value: HpKey; label: string }[] = [
+  { value: "has", label: "HPあり" },
+  { value: "none", label: "HPなし" },
+  { value: "unknown", label: "未確認" },
+];
+
 /** 現在の絞り込み（searchParams 由来）。 */
 export type Filters = {
   q: string;
@@ -88,6 +101,8 @@ export type Filters = {
   view: ViewKey;
   /** 種別: houjin | kojin（未指定はすべて） */
   corp?: CorpKey;
+  /** ホームページ有無: has | none | unknown（未指定はすべて） */
+  hp?: HpKey;
 };
 
 export function FilterBar({
@@ -218,6 +233,29 @@ export function FilterBar({
             className={"chip" + (filters.corp === o.value ? " on" : "")}
             onClick={() =>
               onChange({ corp: filters.corp === o.value ? undefined : o.value })
+            }
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ホームページ有無 チップ */}
+      <div className="chips" role="group" aria-label="ホームページ">
+        <button
+          type="button"
+          className={"chip" + (!filters.hp ? " on" : "")}
+          onClick={() => onChange({ hp: undefined })}
+        >
+          HP: すべて
+        </button>
+        {HP_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            className={"chip" + (filters.hp === o.value ? " on" : "")}
+            onClick={() =>
+              onChange({ hp: filters.hp === o.value ? undefined : o.value })
             }
           >
             {o.label}
