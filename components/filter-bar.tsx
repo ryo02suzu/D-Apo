@@ -95,15 +95,29 @@ export const HP_OPTIONS: { value: HpKey; label: string }[] = [
 /** 現在の絞り込み（searchParams 由来）。 */
 export type Filters = {
   q: string;
-  pref?: string;
+  /** 都道府県（複数選択。空＝全国） */
+  pref?: string[];
   city?: string;
-  status?: string;
+  /** ステータス（複数選択。空＝すべて） */
+  status?: string[];
   view: ViewKey;
-  /** 種別: houjin | kojin（未指定はすべて） */
+  /** 種別: houjin | kojin（未指定はすべて）。2択のため単一選択 */
   corp?: CorpKey;
-  /** ホームページ有無: has | none | unknown（未指定はすべて） */
-  hp?: HpKey;
+  /** ホームページ有無（複数選択。空＝すべて） */
+  hp?: HpKey[];
 };
+
+/** 複数選択チップの ON/OFF。空配列になったら undefined（＝すべて）に戻す。 */
+export function toggleValue<T extends string>(
+  current: T[] | undefined,
+  value: T,
+): T[] | undefined {
+  const list = current ?? [];
+  const next = list.includes(value)
+    ? list.filter((v) => v !== value)
+    : [...list, value];
+  return next.length ? next : undefined;
+}
 
 export function FilterBar({
   filters,
@@ -113,6 +127,10 @@ export function FilterBar({
   /** 1つ以上のキーをまとめて URL へ反映する */
   onChange: (patch: Partial<Filters>) => void;
 }) {
+  const selectedPrefs = filters.pref ?? [];
+  const selectedStatuses = filters.status ?? [];
+  const selectedHp = filters.hp ?? [];
+
   // 検索はローカル state で即時反映 → デバウンスで URL へ反映する。
   const [q, setQ] = useState(filters.q);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -185,16 +203,22 @@ export function FilterBar({
         ))}
       </div>
 
-      {/* エリア：都道府県セレクト + 市区町村テキスト */}
+      {/* エリア：都道府県セレクト（選ぶたびに追加）+ 市区町村テキスト */}
       <div className="chips area-row">
         <select
           className="field area-pref"
-          value={filters.pref ?? ""}
-          onChange={(e) => onChange({ pref: e.target.value || undefined })}
-          aria-label="都道府県"
+          // 選択したら即チップに積むため、セレクト自体は常に未選択へ戻す
+          value=""
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v) onChange({ pref: toggleValue(filters.pref, v) });
+          }}
+          aria-label="都道府県を追加"
         >
-          <option value="">全国</option>
-          {PREFECTURES.map((p) => (
+          <option value="">
+            {selectedPrefs.length ? "都道府県を追加…" : "全国"}
+          </option>
+          {PREFECTURES.filter((p) => !selectedPrefs.includes(p)).map((p) => (
             <option key={p} value={p}>
               {p}
             </option>
@@ -216,6 +240,33 @@ export function FilterBar({
           aria-label="市区町村"
         />
       </div>
+
+      {/* 選択中の都道府県（タップで解除） */}
+      {selectedPrefs.length > 0 && (
+        <div className="chips" role="group" aria-label="選択中の都道府県">
+          {selectedPrefs.map((p) => (
+            <button
+              key={p}
+              type="button"
+              className="chip on"
+              onClick={() => onChange({ pref: toggleValue(filters.pref, p) })}
+              aria-label={`${p} の絞り込みを解除`}
+            >
+              {p}
+              <Icon name="x" size={13} style={{ marginLeft: 5 }} />
+            </button>
+          ))}
+          {selectedPrefs.length > 1 && (
+            <button
+              type="button"
+              className="chip"
+              onClick={() => onChange({ pref: undefined })}
+            >
+              全国に戻す
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 種別（医療法人/個人）チップ */}
       <div className="chips" role="group" aria-label="種別">
@@ -244,7 +295,7 @@ export function FilterBar({
       <div className="chips" role="group" aria-label="ホームページ">
         <button
           type="button"
-          className={"chip" + (!filters.hp ? " on" : "")}
+          className={"chip" + (!selectedHp.length ? " on" : "")}
           onClick={() => onChange({ hp: undefined })}
         >
           HP: すべて
@@ -253,10 +304,9 @@ export function FilterBar({
           <button
             key={o.value}
             type="button"
-            className={"chip" + (filters.hp === o.value ? " on" : "")}
-            onClick={() =>
-              onChange({ hp: filters.hp === o.value ? undefined : o.value })
-            }
+            aria-pressed={selectedHp.includes(o.value)}
+            className={"chip" + (selectedHp.includes(o.value) ? " on" : "")}
+            onClick={() => onChange({ hp: toggleValue(filters.hp, o.value) })}
           >
             {o.label}
           </button>
@@ -267,7 +317,7 @@ export function FilterBar({
       <div className="chips">
         <button
           type="button"
-          className={"chip" + (!filters.status ? " on" : "")}
+          className={"chip" + (!selectedStatuses.length ? " on" : "")}
           onClick={() => onChange({ status: undefined })}
         >
           すべて
@@ -276,13 +326,12 @@ export function FilterBar({
           <button
             key={s}
             type="button"
+            aria-pressed={selectedStatuses.includes(s)}
             className={
               `chip chip-${STATUS_COLOR[s]}` +
-              (filters.status === s ? " on" : "")
+              (selectedStatuses.includes(s) ? " on" : "")
             }
-            onClick={() =>
-              onChange({ status: filters.status === s ? undefined : s })
-            }
+            onClick={() => onChange({ status: toggleValue(filters.status, s) })}
           >
             {STATUS_LABEL[s]}
           </button>

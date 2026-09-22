@@ -51,17 +51,11 @@ function buildQuery(
     const v = escapeIlike(filters.q);
     q = q.or(`name.ilike.%${v}%,address.ilike.%${v}%`);
   }
-  if (filters.pref) q = q.eq("prefecture", filters.pref);
+  // 同一項目内の複数選択は OR（in）、項目どうしは AND。サーバー側 lib/queries.ts と同じ判定。
+  if (filters.pref?.length) q = q.in("prefecture", filters.pref);
   if (filters.city) q = q.ilike("city", `%${escapeIlike(filters.city)}%`);
-  if (filters.status) q = q.eq("status", filters.status);
-  // ホームページ有無: サーバー側 lib/queries.ts と同じ判定
-  if (
-    filters.hp === "has" ||
-    filters.hp === "none" ||
-    filters.hp === "unknown"
-  ) {
-    q = q.eq("website_status", filters.hp);
-  }
+  if (filters.status?.length) q = q.in("status", filters.status);
+  if (filters.hp?.length) q = q.in("website_status", filters.hp);
   // 種別（医療法人/個人）: サーバー側 lib/queries.ts と同じ判定
   if (filters.corp === "houjin") {
     q = q.or(CORP_OR_CONDITION);
@@ -219,12 +213,15 @@ export function ClinicListRealtime({
         if (value) params.set(key, value);
         else params.delete(key);
       };
+      // 複数選択はカンマ区切りで 1 パラメータにまとめる（例: pref=東京都,神奈川県）
+      const setList = (key: string, value?: string[]) =>
+        setOrDelete(key, value?.length ? value.join(",") : undefined);
       if ("q" in patch) setOrDelete("q", patch.q);
-      if ("pref" in patch) setOrDelete("pref", patch.pref);
+      if ("pref" in patch) setList("pref", patch.pref);
       if ("city" in patch) setOrDelete("city", patch.city);
-      if ("status" in patch) setOrDelete("status", patch.status);
+      if ("status" in patch) setList("status", patch.status);
       if ("corp" in patch) setOrDelete("corp", patch.corp);
-      if ("hp" in patch) setOrDelete("hp", patch.hp);
+      if ("hp" in patch) setList("hp", patch.hp);
       if ("view" in patch)
         setOrDelete("view", patch.view === "all" ? undefined : patch.view);
       if ("sort" in patch)

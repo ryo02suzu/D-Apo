@@ -34,9 +34,11 @@ export async function selectClinics(
 /** 一覧ページのサーバー側フィルタ条件（searchParams 由来） */
 export type ClinicPageFilters = {
   q?: string;
-  pref?: string;
+  /** 都道府県（複数可。空＝全国） */
+  pref?: string[];
   city?: string;
-  status?: string;
+  /** ステータス（複数可。空＝すべて） */
+  status?: string[];
   /** ビュー: all | mine | follow | uncalled */
   view?: string;
   /** 並び替え: uncalled | next | updated | name */
@@ -45,9 +47,27 @@ export type ClinicPageFilters = {
   memberId?: string;
   /** 種別: houjin（医療法人）| kojin（個人・その他）。未指定はすべて */
   corp?: string;
-  /** ホームページ有無: has | none | unknown。未指定はすべて */
-  hp?: string;
+  /** ホームページ有無: has | none | unknown（複数可。空＝すべて） */
+  hp?: string[];
 };
+
+/** 複数選択フィルタの値を正規化（許可値のみ・重複除去）。空なら undefined。 */
+export function normalizeMulti(
+  raw: string | undefined,
+  allowed?: readonly string[],
+): string[] | undefined {
+  if (!raw) return undefined;
+  const list = [
+    ...new Set(
+      raw
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean)
+        .filter((v) => !allowed || allowed.includes(v)),
+    ),
+  ];
+  return list.length ? list : undefined;
+}
 
 /** 要フォロー（ビュー）に含めるステータス */
 const FOLLOW_STATUSES = ["no_answer", "unavailable"];
@@ -70,12 +90,11 @@ function applyClinicFilters<T>(query: T, f: ClinicPageFilters): T {
     const v = escapeIlike(f.q);
     q = q.or(`name.ilike.%${v}%,address.ilike.%${v}%`);
   }
-  if (f.pref) q = q.eq("prefecture", f.pref);
+  // 同一項目内の複数選択は OR（in）、項目どうしは AND で効く。
+  if (f.pref?.length) q = q.in("prefecture", f.pref);
   if (f.city) q = q.ilike("city", `%${escapeIlike(f.city)}%`);
-  if (f.status) q = q.eq("status", f.status);
-  if (f.hp === "has" || f.hp === "none" || f.hp === "unknown") {
-    q = q.eq("website_status", f.hp);
-  }
+  if (f.status?.length) q = q.in("status", f.status);
+  if (f.hp?.length) q = q.in("website_status", f.hp);
 
   // 種別（医療法人かどうか）: 名称パターンで判定（lib/ilike.ts に集約）
   if (f.corp === "houjin") {
