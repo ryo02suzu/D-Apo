@@ -86,11 +86,23 @@ export const CORP_OPTIONS: { value: CorpKey; label: string }[] = [
  */
 export type HpKey = "has" | "none" | "unknown";
 
-export const HP_OPTIONS: { value: HpKey; label: string }[] = [
-  { value: "has", label: "HPあり" },
-  { value: "none", label: "HPなし" },
-  { value: "unknown", label: "未確認" },
+/**
+ * HPチップ。営業の切り分けが目的なので「クチコミ増援の対象」「HP制作の対象」の2択にする。
+ * none（確認済みでHPなし）は通話で確認できたぶんだけ増えていくが、それ単体で絞れても
+ * 母集団にならないため、unknown（未確認）とまとめて「HPなし・未確認」として扱う。
+ * 個々の医院が「なし」か「未確認」かは詳細画面で確認できる。
+ */
+export const HP_OPTIONS: { key: string; label: string; values: HpKey[] }[] = [
+  { key: "has", label: "HPあり", values: ["has"] },
+  { key: "nohp", label: "HPなし・未確認", values: ["none", "unknown"] },
 ];
+
+/** チップの values がちょうど選択中と一致しているか */
+function isChipOn(selected: string[], values: readonly string[]): boolean {
+  return (
+    selected.length === values.length && values.every((v) => selected.includes(v))
+  );
+}
 
 /** 現在の絞り込み（searchParams 由来）。 */
 export type Filters = {
@@ -300,17 +312,20 @@ export function FilterBar({
         >
           HP: すべて
         </button>
-        {HP_OPTIONS.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            aria-pressed={selectedHp.includes(o.value)}
-            className={"chip" + (selectedHp.includes(o.value) ? " on" : "")}
-            onClick={() => onChange({ hp: toggleValue(filters.hp, o.value) })}
-          >
-            {o.label}
-          </button>
-        ))}
+        {HP_OPTIONS.map((o) => {
+          const on = isChipOn(selectedHp, o.values);
+          return (
+            <button
+              key={o.key}
+              type="button"
+              aria-pressed={on}
+              className={"chip" + (on ? " on" : "")}
+              onClick={() => onChange({ hp: on ? undefined : [...o.values] })}
+            >
+              {o.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ステータス チップ */}
