@@ -3,12 +3,18 @@
 // 1ページ目だけを取得（全件は読まない）。総件数は count:"exact" で取得し、
 // ClinicListRealtime（Client）へ initial / total / filters を渡す。
 import { ClinicListRealtime } from "@/components/clinic-list-realtime";
-import type { CorpKey, Filters, ViewKey } from "@/components/filter-bar";
+import {
+  PREFECTURES,
+  type CalledKey,
+  type CorpKey,
+  type Filters,
+  type HpKey,
+  type ViewKey,
+} from "@/components/filter-bar";
 import { getCurrentMember } from "@/lib/member";
-import { selectClinicsPage } from "@/lib/queries";
+import { normalizeMulti, selectClinicsPage } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { STATUS_ORDER } from "@/lib/status";
-import type { ClinicStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +35,8 @@ export default async function ClinicsListPage({
     view?: string;
     sort?: string;
     corp?: string;
+    hp?: string;
+    called?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -36,11 +44,9 @@ export default async function ClinicsListPage({
   const member = await getCurrentMember();
 
   const q = sp.q?.trim() || undefined;
-  const pref = sp.pref || undefined;
+  const pref = normalizeMulti(sp.pref, PREFECTURES);
   const city = sp.city?.trim() || undefined;
-  const status = STATUS_ORDER.includes(sp.status as ClinicStatus)
-    ? sp.status
-    : undefined;
+  const status = normalizeMulti(sp.status, STATUS_ORDER);
   const view = (VIEW_KEYS.includes(sp.view ?? "") ? sp.view : "all") as ViewKey;
   const sort = (SORT_KEYS.includes(sp.sort ?? "")
     ? sp.sort
@@ -48,9 +54,27 @@ export default async function ClinicsListPage({
   const corp = (["houjin", "kojin"].includes(sp.corp ?? "")
     ? sp.corp
     : undefined) as CorpKey | undefined;
+  // 複数選択（カンマ区切り）。不正値は捨てる。
+  const hp = normalizeMulti(sp.hp, ["has", "none", "unknown"]) as
+    | HpKey[]
+    | undefined;
+  const called = (["no", "yes"].includes(sp.called ?? "")
+    ? sp.called
+    : undefined) as CalledKey | undefined;
 
   const { rows, count } = await selectClinicsPage(supabase, {
-    filters: { q, pref, city, status, view, sort, corp, memberId: member?.id },
+    filters: {
+      q,
+      pref,
+      city,
+      status,
+      view,
+      sort,
+      corp,
+      hp,
+      called,
+      memberId: member?.id,
+    },
     range: { from: 0, to: PAGE - 1 },
   });
 
@@ -62,6 +86,8 @@ export default async function ClinicsListPage({
     view,
     sort,
     corp,
+    hp,
+    called,
   };
 
   return (

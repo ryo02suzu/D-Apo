@@ -41,6 +41,14 @@ export type Member = {
 /** join 用の最小メンバー情報（name/color のみ） */
 export type MemberRef = Pick<Member, "name" | "color">;
 
+/**
+ * ホームページの有無。営業セグメントの切り分けに使う。
+ *  has     … HPあり（クチコミ増援サービスの対象）
+ *  none    … HPなし（HP制作の対象）
+ *  unknown … 未確認（厚労省データに未記載。実際は不明なので「なし」と断定しない）
+ */
+export type WebsiteStatus = "has" | "none" | "unknown";
+
 /** clinics テーブル（架電対象の歯科医院マスタ） */
 export type Clinic = {
   id: string;
@@ -62,6 +70,12 @@ export type Clinic = {
   place_id: string | null;
   phone_source: string | null;
   phone_verified: boolean;
+  /** HPのURL。政府オープンデータ(mhlw)・通話で聞いた(call)の場合のみ保存する。 */
+  website_url: string | null;
+  website_status: WebsiteStatus;
+  /** どう判明したか: 'mhlw' | 'google' | 'call' */
+  website_source: string | null;
+  website_checked_at: string | null;
   created_at: string;
   updated_at: string;
   /** assigned_to を members に join したときのみ存在（担当者の表示用） */

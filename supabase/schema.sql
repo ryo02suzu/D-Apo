@@ -32,6 +32,14 @@ create table if not exists public.clinics (
   place_id       text,             -- Google Place ID（保存が許容される唯一のPlacesフィールド）
   phone_source   text,             -- 電話番号の取得元: 'manual' | 'places' | 'mhlw' 等
   phone_verified boolean not null default false, -- 人が確認済みか
+  -- ホームページ有無（営業セグメント: HPあり→クチコミ増援 / HPなし→HP制作）
+  -- website_url は保存可能な出所のみ入れる（mhlw=政府オープンデータ / call=本人から聴取）。
+  -- Google 由来は規約上 URL を保存できないため website_status のみ更新する。
+  website_url        text,
+  website_status     text not null default 'unknown'
+                     check (website_status in ('has','none','unknown')),
+  website_source     text,          -- 'mhlw' | 'google' | 'call'
+  website_checked_at timestamptz,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
@@ -42,6 +50,22 @@ alter table public.clinics add column if not exists lng            double precis
 alter table public.clinics add column if not exists place_id       text;
 alter table public.clinics add column if not exists phone_source   text;
 alter table public.clinics add column if not exists phone_verified boolean not null default false;
+alter table public.clinics add column if not exists website_url        text;
+alter table public.clinics add column if not exists website_status     text not null default 'unknown';
+alter table public.clinics add column if not exists website_source     text;
+alter table public.clinics add column if not exists website_checked_at timestamptz;
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'clinics_website_status_check') then
+    alter table public.clinics
+      add constraint clinics_website_status_check
+      check (website_status in ('has','none','unknown'));
+  end if;
+end $$;
+
+-- 絞り込み用インデックス（都道府県 × HP有無 × ステータス）
+create index if not exists clinics_website_status_idx      on public.clinics (website_status);
+create index if not exists clinics_pref_website_status_idx on public.clinics (prefecture, website_status, status);
 
 create table if not exists public.call_logs (
   id          uuid primary key default gen_random_uuid(),

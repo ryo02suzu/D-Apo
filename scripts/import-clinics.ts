@@ -216,6 +216,26 @@ function toBusinessHoursText(wh: WeeklyHours): string | null {
   return s || null;
 }
 
+/**
+ * 「案内用ホームページアドレス」を正規化する。
+ * 手入力欄のため `http//x`（コロン欠落）や `http:/x`（スラッシュ不足）が実データに多い。
+ * 機械的に直せるものは直し、メールアドレス等の URL でない値は null にする。
+ */
+function normalizeUrl(raw: string): string | null {
+  let u = raw.replace(/　/g, " ").trim().replace(/^["']|["']$/g, "");
+  if (!u) return null;
+  u = u.replace(/：/g, ":").replace(/／/g, "/").replace(/．/g, ".");
+  u = u.replace(/^(https?)\/\//i, "$1://"); // http//x   → http://x
+  u = u.replace(/^(https?):\/(?!\/)/i, "$1://"); // http:/x   → http://x
+  u = u.replace(/^(https?):\/{3,}/i, "$1://"); // http:///x → http://x
+  if (!/^https?:\/\//i.test(u)) {
+    if (/^(www\.)?[\w-]+(\.[\w-]+)+(\/|$)/.test(u)) u = `http://${u}`;
+    else return null;
+  }
+  if (!/^https?:\/\/[\w-]+(\.[\w-]+)+/i.test(u)) return null;
+  return u.length <= 500 ? u : null;
+}
+
 /** 所在地文字列から都道府県・市区町村を抽出 */
 function parseRegion(addr: string): {
   prefecture: string | null;
@@ -247,6 +267,9 @@ type ClinicInsert = {
   lat: number | null;
   lng: number | null;
   source: string;
+  website_url: string | null;
+  website_status: "has" | "unknown";
+  website_source: string | null;
 };
 
 /** "43.29" → 43.29。空・不正は null */
@@ -266,7 +289,8 @@ function sqlNum(n: number | null): string {
 }
 function recordsToSql(records: ClinicInsert[]): string {
   const cols =
-    "external_id,name,address,prefecture,city,business_hours,hours,lat,lng,source";
+    "external_id,name,address,prefecture,city,business_hours,hours,lat,lng,source," +
+    "website_url,website_status,website_source";
   const lines: string[] = [
     "-- 自動生成: 厚労省オープンデータ → clinics 投入用SQL",
     "-- Supabase ダッシュボード → SQL Editor に貼って Run（schema.sql 実行後）",
@@ -281,16 +305,25 @@ function recordsToSql(records: ClinicInsert[]): string {
       return (
         `  (${sqlStr(r.external_id)}, ${sqlStr(r.name)}, ${sqlStr(r.address)}, ` +
         `${sqlStr(r.prefecture)}, ${sqlStr(r.city)}, ${sqlStr(r.business_hours)}, ` +
-        `${hours}, ${sqlNum(r.lat)}, ${sqlNum(r.lng)}, ${sqlStr(r.source)})`
+        `${hours}, ${sqlNum(r.lat)}, ${sqlNum(r.lng)}, ${sqlStr(r.source)}, ` +
+        `${sqlStr(r.website_url)}, ${sqlStr(r.website_status)}, ${sqlStr(r.website_source)})`
       );
     });
     lines.push(values.join(",\n"));
-    // 再実行しても安全に（マスタ項目だけ更新、進捗・電話は保持）
+    // 再実行しても安全に（マスタ項目だけ更新、進捗・電話は保持）。
+    // HP は「厚労省に記載がある＝has」のみ上書きし、通話や Google で判明済みの
+    // 結果（website_source<>'mhlw'）は潰さない。
     lines.push(
       "on conflict (external_id) do update set\n" +
         "  name=excluded.name, address=excluded.address, prefecture=excluded.prefecture,\n" +
         "  city=excluded.city, business_hours=excluded.business_hours, hours=excluded.hours,\n" +
-        "  lat=excluded.lat, lng=excluded.lng, source=excluded.source;",
+        "  lat=excluded.lat, lng=excluded.lng, source=excluded.source,\n" +
+        "  website_url=case when excluded.website_status='has'\n" +
+        "    then excluded.website_url else public.clinics.website_url end,\n" +
+        "  website_status=case when excluded.website_status='has'\n" +
+        "    then 'has' else public.clinics.website_status end,\n" +
+        "  website_source=case when excluded.website_status='has'\n" +
+        "    then 'mhlw' else public.clinics.website_source end;",
     );
     lines.push("");
   }
@@ -318,6 +351,7 @@ async function main() {
   const addrIdx = fc("所在地");
   const latIdx = fc("所在地座標（緯度）");
   const lngIdx = fc("所在地座標（経度）");
+  const urlIdx = fc("案内用ホームページアドレス");
 
   const records: ClinicInsert[] = [];
   let skippedRegion = 0;
@@ -344,6 +378,7 @@ async function main() {
     }
 
     const hours = hoursMap.get(external_id) ?? {};
+    const websiteUrl = normalizeUrl(row[urlIdx] ?? "");
     records.push({
       external_id,
       name,
@@ -355,6 +390,10 @@ async function main() {
       lat: parseCoord(row[latIdx]),
       lng: parseCoord(row[lngIdx]),
       source,
+      website_url: websiteUrl,
+      // 未記載は「HPなし」ではなく「未確認」。断定して架電すると事故るため。
+      website_status: websiteUrl ? "has" : "unknown",
+      website_source: websiteUrl ? "mhlw" : null,
     });
     if (records.length >= limit) break;
   }
@@ -409,7 +448,15 @@ async function main() {
   const BATCH = 500;
   let done = 0;
   for (let i = 0; i < records.length; i += BATCH) {
-    const batch = records.slice(i, i + BATCH);
+    // マスタ項目のみ投入する。HP は「未記載＝unknown」を一緒に送ると、
+    // 通話や Google で判明済みの結果まで unknown で潰してしまうため、ここでは外す。
+    const batch = records.slice(i, i + BATCH).map((r) => {
+      const { website_url, website_status, website_source, ...master } = r;
+      void website_url;
+      void website_status;
+      void website_source;
+      return master;
+    });
     // external_id を衝突キーに upsert。status/latest_memo 等は payload に含めないため、
     // 再取込時も既存の架電進捗を保持する。
     const { error } = await supabase
@@ -422,7 +469,33 @@ async function main() {
     done += batch.length;
     console.log(`  投入 ${done}/${records.length}`);
   }
-  console.log(`🎉 完了: ${done}件を取り込みました。`);
+
+  // HP は「厚労省に記載がある＝has」のみを別パスで反映する（上書き事故を防ぐ）。
+  const withSite = records.filter((r) => r.website_status === "has");
+  let siteDone = 0;
+  for (let i = 0; i < withSite.length; i += BATCH) {
+    const batch = withSite.slice(i, i + BATCH).map((r) => ({
+      external_id: r.external_id,
+      name: r.name, // NOT NULL 制約のため insert 経路に備えて同梱
+      website_url: r.website_url,
+      website_status: r.website_status,
+      website_source: r.website_source,
+      website_checked_at: new Date().toISOString(),
+    }));
+    const { error } = await supabase
+      .from("clinics")
+      .upsert(batch, { onConflict: "external_id" });
+    if (error) {
+      console.error(`❌ HPバッチ ${i / BATCH + 1} で失敗:`, error.message);
+      process.exit(1);
+    }
+    siteDone += batch.length;
+    console.log(`  HP反映 ${siteDone}/${withSite.length}`);
+  }
+
+  console.log(
+    `🎉 完了: ${done}件を取り込み、うち ${siteDone}件にホームページURLを設定しました。`,
+  );
 }
 
 main().catch((e) => {
