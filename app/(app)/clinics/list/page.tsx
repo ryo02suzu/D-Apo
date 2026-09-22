@@ -3,15 +3,15 @@
 // 1ページ目だけを取得（全件は読まない）。総件数は count:"exact" で取得し、
 // ClinicListRealtime（Client）へ initial / total / filters を渡す。
 import { ClinicListRealtime } from "@/components/clinic-list-realtime";
-import {
-  PREFECTURES,
-  type CalledKey,
-  type CorpKey,
-  type Filters,
-  type HpKey,
-  type ViewKey,
+import type {
+  CalledKey,
+  CorpKey,
+  Filters,
+  HpKey,
+  ViewKey,
 } from "@/components/filter-bar";
 import { getCurrentMember } from "@/lib/member";
+import { PREFECTURES } from "@/lib/prefectures";
 import { normalizeMulti, selectClinicsPage } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import { STATUS_ORDER } from "@/lib/status";
