@@ -56,6 +56,9 @@ function buildQuery(
   if (filters.city) q = q.ilike("city", `%${escapeIlike(filters.city)}%`);
   if (filters.status?.length) q = q.in("status", filters.status);
   if (filters.hp?.length) q = q.in("website_status", filters.hp);
+  // 架電したか: not_called だけが未架電、それ以外の5ステータスはすべて架電済み
+  if (filters.called === "no") q = q.eq("status", "not_called");
+  else if (filters.called === "yes") q = q.neq("status", "not_called");
   // 種別（医療法人/個人）: サーバー側 lib/queries.ts と同じ判定
   if (filters.corp === "houjin") {
     q = q.or(CORP_OR_CONDITION);
@@ -222,6 +225,7 @@ export function ClinicListRealtime({
       if ("status" in patch) setList("status", patch.status);
       if ("corp" in patch) setOrDelete("corp", patch.corp);
       if ("hp" in patch) setList("hp", patch.hp);
+      if ("called" in patch) setOrDelete("called", patch.called);
       if ("view" in patch)
         setOrDelete("view", patch.view === "all" ? undefined : patch.view);
       if ("sort" in patch)

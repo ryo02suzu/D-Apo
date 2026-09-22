@@ -97,6 +97,17 @@ export const HP_OPTIONS: { key: string; label: string; values: HpKey[] }[] = [
   { key: "nohp", label: "HPなし・未確認", values: ["none", "unknown"] },
 ];
 
+/**
+ * 架電したかどうか。ステータス6種のうち not_called だけが「まだかけていない」で、
+ * 残り5種はすべて「かけた」。5つ選ばせるのは面倒なので独立した軸にする。
+ */
+export type CalledKey = "no" | "yes";
+
+export const CALLED_OPTIONS: { value: CalledKey; label: string }[] = [
+  { value: "no", label: "まだかけてない" },
+  { value: "yes", label: "かけた" },
+];
+
 /** チップの values がちょうど選択中と一致しているか */
 function isChipOn(selected: string[], values: readonly string[]): boolean {
   return (
@@ -117,6 +128,8 @@ export type Filters = {
   corp?: CorpKey;
   /** ホームページ有無（複数選択。空＝すべて） */
   hp?: HpKey[];
+  /** 架電したか: no（未架電のみ）| yes（架電済みのみ）。未指定はすべて */
+  called?: CalledKey;
 };
 
 /** 複数選択チップの ON/OFF。空配列になったら undefined（＝すべて）に戻す。 */
@@ -296,6 +309,32 @@ export function FilterBar({
             className={"chip" + (filters.corp === o.value ? " on" : "")}
             onClick={() =>
               onChange({ corp: filters.corp === o.value ? undefined : o.value })
+            }
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 架電したか チップ */}
+      <div className="chips" role="group" aria-label="架電状況">
+        <button
+          type="button"
+          className={"chip" + (!filters.called ? " on" : "")}
+          onClick={() => onChange({ called: undefined })}
+        >
+          架電: すべて
+        </button>
+        {CALLED_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            aria-pressed={filters.called === o.value}
+            className={"chip" + (filters.called === o.value ? " on" : "")}
+            onClick={() =>
+              onChange({
+                called: filters.called === o.value ? undefined : o.value,
+              })
             }
           >
             {o.label}

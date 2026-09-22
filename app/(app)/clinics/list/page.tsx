@@ -5,6 +5,7 @@
 import { ClinicListRealtime } from "@/components/clinic-list-realtime";
 import {
   PREFECTURES,
+  type CalledKey,
   type CorpKey,
   type Filters,
   type HpKey,
@@ -35,6 +36,7 @@ export default async function ClinicsListPage({
     sort?: string;
     corp?: string;
     hp?: string;
+    called?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -56,6 +58,9 @@ export default async function ClinicsListPage({
   const hp = normalizeMulti(sp.hp, ["has", "none", "unknown"]) as
     | HpKey[]
     | undefined;
+  const called = (["no", "yes"].includes(sp.called ?? "")
+    ? sp.called
+    : undefined) as CalledKey | undefined;
 
   const { rows, count } = await selectClinicsPage(supabase, {
     filters: {
@@ -67,6 +72,7 @@ export default async function ClinicsListPage({
       sort,
       corp,
       hp,
+      called,
       memberId: member?.id,
     },
     range: { from: 0, to: PAGE - 1 },
@@ -81,6 +87,7 @@ export default async function ClinicsListPage({
     sort,
     corp,
     hp,
+    called,
   };
 
   return (

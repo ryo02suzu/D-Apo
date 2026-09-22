@@ -49,6 +49,8 @@ export type ClinicPageFilters = {
   corp?: string;
   /** ホームページ有無: has | none | unknown（複数可。空＝すべて） */
   hp?: string[];
+  /** 架電したか: no（未架電のみ）| yes（架電済みのみ）。未指定はすべて */
+  called?: string;
 };
 
 /** 複数選択フィルタの値を正規化（許可値のみ・重複除去）。空なら undefined。 */
@@ -85,6 +87,7 @@ function applyClinicFilters<T>(query: T, f: ClinicPageFilters): T {
     ilike: (col: string, val: string) => typeof q;
     in: (col: string, vals: unknown[]) => typeof q;
     not: (col: string, op: string, val: string) => typeof q;
+    neq: (col: string, val: unknown) => typeof q;
   };
   if (f.q) {
     const v = escapeIlike(f.q);
@@ -95,6 +98,9 @@ function applyClinicFilters<T>(query: T, f: ClinicPageFilters): T {
   if (f.city) q = q.ilike("city", `%${escapeIlike(f.city)}%`);
   if (f.status?.length) q = q.in("status", f.status);
   if (f.hp?.length) q = q.in("website_status", f.hp);
+  // 架電したか。not_called だけが未架電、それ以外の5ステータスはすべて架電済み。
+  if (f.called === "no") q = q.eq("status", "not_called");
+  else if (f.called === "yes") q = q.neq("status", "not_called");
 
   // 種別（医療法人かどうか）: 名称パターンで判定（lib/ilike.ts に集約）
   if (f.corp === "houjin") {
